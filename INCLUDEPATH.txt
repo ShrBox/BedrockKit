@@ -1,1 +1,1 @@
-$(SolutionDir)\shared\headers\;$(SolutionDir)\shared;
+$(SolutionDir)\shared\headers\;$(SolutionDir)\shared;$(VC_IncludePath);$(WindowsSDK_IncludePath);

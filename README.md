@@ -1,1 +1,3 @@
 # BedrockKit
+# LICENSE
+GPLv3
