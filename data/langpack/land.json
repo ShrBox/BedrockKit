@@ -1,0 +1,12 @@
+{
+"land.select.A":"你已选择点A 输入/land b选点B /land exit退出选点模式",
+"land.select.B":"你已选择点B 输入/land buy购买 /land exit退出",
+"land.select.err":"选点错误，可能跨维度或没选点A",
+"land.need.select":"请先选点",
+"land.too.big":"领地太大",
+"land.no.money":"余额不足",
+"land.no.land.here":"这里没有领地",
+"land.no.target":"找不到指定目标",
+"land.no.perm":"你无权操作此处领地",
+"land.overlap":"领地重叠！"
+}
