@@ -257,8 +257,9 @@ void entry() {
 			}
 		}
 	});
-	addListener([](PlayerLeftEvent& ev) {
-		LOG(ev.getPlayer().getName(), "lefted server");
+	addListener([](Player
+		       Event& ev) {
+		LOG(ev.getPlayer().getName(), "left server");
 		});
 	addListener([](PlayerCMDEvent& ev) {
 		LOG(ev.getPlayer().getName(), "CMD", ev.getCMD());
