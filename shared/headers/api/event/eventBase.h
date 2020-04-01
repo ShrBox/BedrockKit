@@ -2,6 +2,7 @@
 #include<lbpch.h>
 #include<variant>
 #include<api/types/types.h>
+#include<I18N.h>
 using std::string, std::function,std::variant;
 enum class EvPrio:int
 {
@@ -46,7 +47,18 @@ struct CallBackStorage {
 	CallBackStorage(function<void(T&)>&& fun,LInfo<T> lf):data(std::forward< function<void(T&)>>(fun)),id(lf) {
 	}
 };
-template<class T>
+#ifdef LIGHTBASE_EXPORTS
+static inline void logError(const char* e,const char* T) {
+	char ebuf[1024];
+	snprintf(ebuf, 1024, I18N::EVENT_EXCEPTION_S.c_str(), e, T);
+	LOG.l<LOGLVL::Error>(ebuf);
+}
+#else
+static inline void logError(const char* e, const char* T) {
+	printf(I18N::EVENT_EXCEPTION_S.c_str(), e, T);
+}
+#endif
+template <class T>
 class EventCaller {
 	LIGHTBASE_API static std::list<CallBackStorage<T>> listener;
 public:
@@ -59,13 +71,13 @@ public:
 					i(ev);
 				}
 				catch (std::exception e) {
-					printf("error [%s] in event %s\n", e.what(), typeid(T).name());
+					logError(e.what(), typeid(T).name());
 				}
 				catch (string e) {
-					printf("error [%s] in event %s\n", e.c_str(), typeid(T).name());
+					logError(e.c_str(), typeid(T).name());
 				}
 				catch (...) {
-					printf("error [unknow error] in event %s\n", typeid(T).name());
+					logError("unk error", typeid(T).name());
 				}
 				if (ev.isAborted()) break;
 			}

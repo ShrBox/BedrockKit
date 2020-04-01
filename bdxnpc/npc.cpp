@@ -14,6 +14,10 @@ enum NPCOP_SETROT :int {
 enum NPCOP_REMOVE:int {
 	REMOVE=1
 };
+string MINECRAFT_ENTITY_TYPE(string x) {
+	if (x.find(':') != x.npos) return x;
+	else return "minecraft:" + x;
+}
 struct NPC {
 	string name;
 	string nametag;
@@ -27,10 +31,11 @@ struct NPC {
 	}
 	void unpack(RBStream& bs) {
 		bs.apply(name, nametag, type, pos,rot, eid, data);
+		type = MINECRAFT_ENTITY_TYPE(type);
 	}
 	void NetAdd(WBStream& bs)const{
 #define SBIT(x) (1ull<<x)
-		bs.apply(VarULong(eid), VarULong(eid), MCString("minecraft:" + type), pos, Vec3{ 0,0,0 }
+		bs.apply(VarULong(eid), VarULong(eid), MCString(type), pos, Vec3{ 0,0,0 }
 			, rot, //rotation
 			VarUInt(0), //attr
 			VarUInt(3), //metadata :3
@@ -126,7 +131,7 @@ bool NPCCMD_ADD(CommandOrigin const& ori, CommandOutput& outp, MyEnum<NPCOP_ADD>
 	NPC npc;
 	npc.name = name;
 	npc.nametag = tag;
-	npc.type = type;
+	npc.type = MINECRAFT_ENTITY_TYPE(type);
 	npc.data = data;
 	npc.eid = NPCID++;
 	npc.pos = ori.getWorldPosition();

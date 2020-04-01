@@ -25,7 +25,8 @@ namespace LandImpl {
 		PERM_USE = 2,  //null hand place
 		PERM_ATK = 4,  //attack entity
 		PERM_BUILD = 8, //nonnull hand place
-		PERM_DESTROY=16
+		PERM_DESTROY=16,
+		PERM_ITEMFRAME=32
 	};
 
 	struct FastLand {
@@ -60,6 +61,9 @@ namespace LandImpl {
 				if (name.set) {
 					rv += name.val();
 					rv += ',';
+				}
+				else {
+					rv += S(owner[i]) + ',';
 				}
 			}
 			if (rv.size()) rv.pop_back();
@@ -103,7 +107,7 @@ namespace LandImpl {
 		}
 	};
 	static inline void __fail(const string& c) {
-		printf(c.c_str());
+		printf("[LAND/FATAL] %s\n",c.c_str());
 		exit(1);
 	}
 	namespace LandCacheManager {
@@ -227,7 +231,7 @@ namespace LandImpl {
 			string LList;
 			u64 CID = ChunkID(x, z, dim);
 			if (db->get(to_view(CID), LList)) {
-				v = CLDP.alloc((u32*)LList.data(), (u32)LList.size() / sizeof(u32), x, z);//new ChunkLandManager((u32*)LList.data(), (u32)LList.size() / sizeof(u32), x, z);
+				v = CLDP.alloc((u32*)LList.data(), (u32)(LList.size() / sizeof(u32)), x, z);//new ChunkLandManager((u32*)LList.data(), (u32)LList.size() / sizeof(u32), x, z);
 			}
 			else {
 				v = &EMPTYC;
@@ -451,6 +455,15 @@ BDXLAND_API u32 checkLandRange(int x, int z, int dx, int dz, int dim) {
 		}
 	return 0;
 }
+BDXLAND_API bool checkLandOwnerRange(int x, int z, int dx, int dz, int dim, unsigned long long xuid) {
+	for (int i = x; i <= dx; ++i)
+		for (int j = z; j <= dz; ++j)
+		{
+			auto fl = getFastLand(i, j, dim);
+			if (fl && fl->getOPerm(xuid)==0) return false;
+		}
+	return true;
+}
 static inline FastLand const* genericPerm(BlockPos const& pos, WPlayer wp, LandPerm pm=LandPerm::NOTHING) {
 	return genericPerm(pos.x, pos.z, wp, pm);
 }
@@ -458,12 +471,12 @@ static void LandGUIFor(WPlayer wp) {
 	using namespace GUI;
 	shared_ptr<FullForm> sf = make_shared<FullForm>();
 	sf->title = "LAND GUI";
-	sf->addWidget(GUIDropdown("operation", { "give","trust" }));
-	sf->addWidget(GUIDropdown("target", getPlayerList()));
+	sf->addWidget(GUIDropdown(string(I18N::S_OPERATION), { "give","trust" }));
+	sf->addWidget(GUIDropdown(string(I18N::S_TARGET), getPlayerList()));
 	sendForm(wp, FullFormBinder(sf, [](WPlayer w, FullFormBinder::DType d) {
 		if (d.set) {
 			auto [val, data] = d.val();
-			w.runcmd("land " + data[0] + " \"" + data[1] + '"');
+			w.runcmdA("land", data[0], QUOTE(data[1]));
 		}
 	}));
 }
@@ -531,6 +544,7 @@ static bool oncmd_2(CommandOrigin const& ori, CommandOutput& outp, MyEnum<LANDOP
 			return false;
 		}
 		if (op == LANDOP::info) {
+			outp.addMessage("landid " + S(fl->lid));
 			outp.addMessage("owners "+fl->ownStr());
 			outp.addMessage("perm " + S((u16)fl->perm));
 			return true;
@@ -647,6 +661,24 @@ static void TEST() {
 		}
 	printf("2\n");
 }
+static bool oncmd_dumpall(CommandOrigin const& ori, CommandOutput& outp) {
+	LandImpl::db->iter([&](string_view k, string_view v) {
+		if (k.size() == 4) {
+			FastLand* fl = (FastLand*)v.data();
+			outp.addMessage("land id " + S(fl->lid)+" perm "+S(fl->perm));
+			outp.addMessage("land pos (" + S(int(to_lpos(fl->x))) + " " + S(int(to_lpos(fl->z))) + ") -> (" + S(int(to_lpos(fl->dx))) + " " + S(int(to_lpos(fl->dz))) + ") dim " + S(fl->dim));
+			outp.addMessage("land owners " + fl->ownStr());
+			outp.addMessage("----------------------");
+		}
+		return true;
+	});
+	/*XIDREG::foreach([](xuid_t a, string_view b) {
+		printf("g\n");
+		LOG(a, b);
+		return true;
+		});*/
+	return true;
+}
 void entry() {
 	LandImpl::INITDB();
 	//TEST();
@@ -660,6 +692,8 @@ void entry() {
 		CmdOverload(land, oncmd_2, "land-op");
 		CmdOverload(land, oncmd_3, "land-op2","target");
 		CmdOverload(land, oncmd_perm, "perm","land_perm");
+		MakeCommand("landdump", "dump all lands", 1);
+		CmdOverload(landdump, oncmd_dumpall);
 		});
 	addListener([](PlayerDestroyEvent& ev) {
 		auto fl = genericPerm(ev.getPos(), ev.getPlayer(),LandPerm::PERM_DESTROY);
@@ -730,7 +764,7 @@ THook(void, "?handle@ServerNetworkHandler@@UEAAXAEBVNetworkIdentifier@@AEBVItemF
 		int x = dAccess<int, 40>(pk);
 		int z = dAccess<int, 48>(pk);
 		WPlayer wp{ *sp };
-		auto fl = genericPerm(x, z, wp);
+		auto fl = genericPerm(x, z, wp,LandPerm::PERM_ITEMFRAME);
 		if (fl) {
 			NoticePerm(wp, fl);
 			return;

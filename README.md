@@ -1,3 +1,5 @@
 # BedrockKit
-# LICENSE
-GPLv3
+examples for https://github.com/Sysca11/BedrockX
+
+# LICENCE:
+MIT

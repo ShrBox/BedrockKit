@@ -12,3 +12,4 @@
 BDXLAND_API unsigned int getLandIDAt(int x, int z, int dim);
 BDXLAND_API unsigned int checkLandRange(int x, int z, int dx, int dz, int dim);
 BDXLAND_API bool checkLandOwnerRange(int x, int z, int dx, int dz, int dim, unsigned long long xuid);
+#define iround(x) int(round(x))

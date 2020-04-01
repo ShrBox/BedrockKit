@@ -2,10 +2,12 @@
 //
 
 #include "pch.h"
+#include <bdxland.h>
 static std::unique_ptr<KVDBImpl> db;
 static Logger LOG(stdio_commit{"[TPA] "});
 //#define CSUCC outp.success("done")
-#define CSUCC  
+#define CSUCC 
+
 #pragma region structs
 enum direction :int {
 	A_B = 1,
@@ -59,6 +61,8 @@ struct Homes {
 		Home(){}
 		Home(string const& b,WActor ac) :name(b),pos(ac) {
 		}
+		Home(string const& b, Vec4 const& ac) :name(b), pos(ac) {
+		}
 		template<typename _TP>
 		void pack(WBStreamImpl<_TP>& ws) const {
 			ws.apply(pos, name);
@@ -104,15 +108,16 @@ struct Homes {
 };
 #pragma endregion
 #pragma region gvals
-LangPack LP("langpack/tpa.json");
+static LangPack LP("langpack/tpa.json");
 
-std::list<TPReq> reqs;
-unordered_map<CHash,TPASet> tpaSetting;
-unordered_map<string, Vec4> warps;
+static std::list<TPReq> reqs;
+static unordered_map<CHash,TPASet> tpaSetting;
+static unordered_map<string, Vec4> warps;
 
-clock_t TPexpire=CLOCKS_PER_SEC*10;
-clock_t TPratelimit=CLOCKS_PER_SEC*2;
+static clock_t TPexpire=CLOCKS_PER_SEC*10;
+static clock_t TPratelimit=CLOCKS_PER_SEC*2;
 static int MAX_HOMES=5;
+static int HOME_DISTANCE_LAND = 0;
 
 playerMap<Vec4> deathPos;
 #pragma endregion
@@ -198,7 +203,7 @@ void DoMakeReq(WPlayer _a, WPlayer _b, direction dir) {
 		auto [clicked,res,list] = i;
 		if (clicked) {
 			int idx = atoi(res);
-			wp.runcmd("tpa "s + (idx == 0 ? "ac" : "de"));
+			wp.runcmdA("tpa",(idx == 0 ? "ac" : "de"));
 		}
 	} ,{} });
 }
@@ -217,7 +222,7 @@ void sendWARPGUI(WPlayer wp) {
 	using namespace GUI;
 	sendForm(wp, SimpleFormBinder(WARPGUI, [](WPlayer wp, SimpleFormBinder::DType d) {
 		if (d.set) {
-			wp.runcmd("warp go \""s + d.val().second+'"');
+			wp.runcmdA("warp", "go",  QUOTE(d.val().second));
 		}
 	}));
 }
@@ -226,7 +231,7 @@ void sendHOMEGUI(WPlayer wp) {
 	using namespace GUI;
 	auto fm = make_shared<FullForm>();
 	fm->title = "Home System";
-	fm->addWidget({ GUIDropdown("type",{"go","del"}) });
+	fm->addWidget({ GUIDropdown(string(I18N::S_OPERATION),{"go","del"}) });
 	vector<string> homes;
 	for (auto& i : hm.data) {
 		homes.emplace_back(i.name);
@@ -237,7 +242,7 @@ void sendHOMEGUI(WPlayer wp) {
 		if (d.set) {
 			auto [rawres, res] = d.val();
 			int op = std::get<int>(rawres[0]);
-			wp.runcmd("home "s + (op ? "del" : "go") + " \"" + res[1]+'"');
+			wp.runcmdA("home",(op ? "del" : "go"),QUOTE(res[1]));
 		}
 	}));
 }
@@ -297,12 +302,12 @@ bool oncmd_tpagui(CommandOrigin const& ori, CommandOutput& outp, MyEnum<TPAOPGUI
 	using namespace GUI;
 	auto sf = make_shared<FullForm>();
 	sf->title = "TPA GUI";
-	sf->addWidget(GUIDropdown("direction", { "to","here" }));
-	sf->addWidget(GUIDropdown("player", getPlayerList()));
+	sf->addWidget(GUIDropdown(string(I18N::S_OPERATION), { "to","here" }));
+	sf->addWidget(GUIDropdown(string(I18N::S_TARGET), getPlayerList()));
 	sendForm(wp.val(), FullFormBinder(sf, [](WPlayer w, FullFormBinder::DType d) {
 		if (d.set) {
 			auto [dat, ext] = d.val();
-			w.runcmd("tpa " + ext[0] + " \"" + ext[1] + "\"");
+			w.runcmdA("tpa",ext[0],QUOTE(ext[1]));
 		}
 		}));
 	return true;
@@ -413,7 +418,13 @@ bool generic_home(CommandOrigin const& ori, CommandOutput& outp, Homes& hm, MyEn
 			outp.error(_TRS("home.is.full"));
 			return false;
 		}
-		hm.data.emplace_back(val.value(), WActor{ MakeWP(ori).val() });
+		WPlayer wp = MakeWP(ori).val();
+		Vec4 vc{ wp };
+		if (!checkLandOwnerRange(iround(vc.vc.x - HOME_DISTANCE_LAND), iround(vc.vc.z - HOME_DISTANCE_LAND), iround(vc.vc.x + HOME_DISTANCE_LAND), iround(vc.vc.z + HOME_DISTANCE_LAND), vc.dimid, wp.getXuid())) {
+			outp.error(_TRS("home.near.others.land"));
+			return false;
+		}
+		hm.data.emplace_back(val.value(), vc);
 		hm.save();
 		CSUCC;
 	break;
@@ -495,6 +506,7 @@ void loadall() {
 		jr.bind("max_homes", MAX_HOMES, 5);
 		jr.bind("tpa_timeout", TPexpire, CLOCKS_PER_SEC * 20);
 		jr.bind("tpa_ratelimit", TPratelimit, CLOCKS_PER_SEC * 5);
+		jr.bind("home_land_distance", HOME_DISTANCE_LAND, -1);
 	}
 	catch (string e) {
 		LOG("JSON ERROR", e);

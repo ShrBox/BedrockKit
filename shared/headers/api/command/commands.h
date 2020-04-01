@@ -2,6 +2,7 @@
 #include <tuple>
 #include <mcapi/Command/CommandReg.h>
 #include <stl/optional.h>
+#include <I18N.h>
 namespace CMDREG {
 	template <typename T>
 	inline typeid_t<CommandRegistry> getTPID();
@@ -108,16 +109,16 @@ namespace CMDREG {
 				constexpr auto size = std::tuple_size<container>::value;
 				try {
 					if (invoke_impl(a, b, std::make_index_sequence<size>{}))
-						b.success("success", {});
+						b.success(I18N::CMD_SUCCESS, {});
 				}
 				catch (std::exception e) {
-					b.error("exception during command:\""s + e.what()+"\" please check your args");
+					b.error(I18N::CMD_EXCEPTION+e.what());
 				}
 				catch (string e) {
-					b.error("internal exception during command:\""s + e + "\"");
+					b.error(I18N::CMD_EXCEPTION+e);
 				}
 				catch (...) {
-					b.error("Internal error");
+					b.error(I18N::CMD_EXCEPTION);
 				}
 			}
 			sub() {}

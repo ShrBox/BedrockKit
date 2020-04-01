@@ -35,5 +35,6 @@
   </ItemGroup>
   <ItemGroup>
     <Library Include="..\shared\LIGHTBASE.lib" />
+    <Library Include="..\shared\bdxland.lib" />
   </ItemGroup>
 </Project>

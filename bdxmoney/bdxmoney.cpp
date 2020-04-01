@@ -192,13 +192,14 @@ bool oncmd_money_gui(CommandOrigin const& ori, CommandOutput& outp) {
 	auto fm = std::make_shared<FullForm>();
 	fm->title = "money pay";
 	fm->addWidget({GUILabel("Your money: "+S(Money::getMoney(wp.getXuid())))});
-	fm->addWidget({GUIDropdown("target",getPlayerList())});
+	fm->addWidget({GUIDropdown(string(I18N::S_TARGET),getPlayerList())});
 	fm->addWidget({GUIInput("How much? ")});
 	sendForm(wp, FullFormBinder{ fm,{[](WPlayer P, FullFormBinder::DType data) {
 		if (!data.set) return;
 			auto& [d1,d2] = data.val();
-			P.runcmd("money pay \"" + d2[0] +"\""+ std::get<string>(d1[2]));
+			P.runcmdA("money","pay", QUOTE(d2[0]),std::get<string>(d1[2]));
 	}} });
+	return true;
 }
 void entry() {
 	if (!initDB()) {
