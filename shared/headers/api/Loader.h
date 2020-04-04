@@ -2,6 +2,7 @@
 #include "hash.h"
 #include "hook.h"
 #include "lightbase.h"
+LIGHTBASE_API unsigned long long GetBDXAPILevel();
 template <typename T, int off>
 inline T& dAccess(void* ptr) {
 	return *(T*)(((uintptr_t)ptr) + off);
@@ -121,7 +122,7 @@ extern THookRegister THookRegisterTemplate;
 			return storage;                                                                                 \
 		}                                                                                                   \
 		template <typename... Params>                                                                       \
-		static ret original(Params&&... params) {                                                           \
+		static ret original(Params&&... params) {                                                          \
 			return _original()(std::forward<Params>(params)...);                                            \
 		}                                                                                                   \
 		static ret _hook(__VA_ARGS__);                                                                      \

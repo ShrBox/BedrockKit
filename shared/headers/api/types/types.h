@@ -122,6 +122,7 @@ struct WPlayer : Wrapped<ServerPlayer> {
 struct WItem : Wrapped<ItemStack> {
 	WItem(ItemStack& is) : Wrapped<ItemStack>(is) {}
 	LBAPI unsigned char getCount() const;
+	static void determine_off();
 };
 struct WBlock : Wrapped<Block> {
 	WBlock(Block const& i) : Wrapped<Block>(i) {}

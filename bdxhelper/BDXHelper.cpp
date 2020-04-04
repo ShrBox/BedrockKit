@@ -27,7 +27,8 @@ THook(
 	"?setStack@ResourcePackManager@@QEAAXV?$unique_ptr@VResourcePackStack@@U?$default_delete@VResourcePackStack@@@std@@"
 	"@std@@W4ResourcePackStackType@@_N@Z",void* thi,
 	void* ptr, int type, bool flag) {
-	((char*)thi)[227] = EXP_PLAY;
+	if(EXP_PLAY)
+		((char*)thi)[227] = EXP_PLAY;
 	original(thi, ptr, type, flag);
 }
 
@@ -48,21 +49,46 @@ THook(void, "??0LevelSettings@@QEAA@AEBV0@@Z", char* lhs, char* rhs) {
 	//rhs[36] = settings.education_feature;
 	original(lhs, rhs);
 }
-
 #pragma endregion
 unordered_map<int, string> CMDMAP;
 bool regABILITY;
+bool fix_crash_bed_explode, FIX_PUSH_CHEST;
+int FAKE_SEED;
+vector<taskid_t> TASKS;
 void loadCfg() {
 	try {
 		CMDMAP.clear();
+		for (auto i : TASKS) {
+			Handler::cancel(i);
+		}
+		TASKS.clear();
 		ConfigJReader jr("config/helper.json");
-		jr.bind("enable_expplay", EXP_PLAY);
+		jr.bind("force_enable_expplay", EXP_PLAY,false);
 		jr.bind("CMDMAP", CMDMAP);
 		jr.bind("enable_ability", regABILITY);
+		jr.bind("fix_crash_bed_explode", fix_crash_bed_explode, false);
+		jr.bind("FIX_PUSH_CHEST", FIX_PUSH_CHEST, false);
+		jr.bind("FAKE_SEED", FAKE_SEED, 114514);
+		vector<string> Timers;
+		jr.bind("Timers", Timers, {});
+		if (EXP_PLAY) {
+			LOG("EXP Play mode is BUGGY!!!");
+		}
+		for (auto& i : Timers) {
+			char _luabuf[256];
+			int interval=-1, delay=-1;
+			sscanf_s(i.c_str(), "%d;%d;%s",&interval,&delay,_luabuf,256);
+			if (delay == -1) continue;
+			string lua = _luabuf;
+			LOG("enabled timer", lua, interval, delay);
+			TASKS.push_back(Handler::schedule(DelayedRepeatingTask([lua]() {
+				call_lua(lua.c_str(), {});
+			}, delay, interval)));
+		}
 	}
 	catch (string e) {
 		printf("[BDXHelper] json error %s\n", e.c_str());
-		exit(1);
+		throw 0;
 	}
 }
 bool onRunAS(CommandOrigin const& ori, CommandOutput& outp, CommandSelector<Player>& p, CommandMessage& cm) {
@@ -208,6 +234,10 @@ bool onCMD_skick(CommandOrigin const& ori, CommandOutput& outp,string& target) {
 	}
 	return true;
 }
+static bool onReload(CommandOrigin const& ori, CommandOutput& outp) {
+	loadCfg();
+	return true;
+}
 void entry() {
 	loadCfg();
 	loadCNAME();
@@ -226,6 +256,8 @@ void entry() {
 		CmdOverload(ban, onCMD_BanList, "list");
 		MakeCommand("skick", "force kick", 1);
 		CmdOverload(skick, onCMD_skick, "target");
+		MakeCommand("hreload", "reload cmdhelper", 1);
+		CmdOverload(hreload, onReload);
 		if (regABILITY) {
 			SymCall("?setup@AbilityCommand@@SAXAEAVCommandRegistry@@@Z", void, CommandRegistry&)(LocateS<CommandRegistry>());
 		}
@@ -257,8 +289,15 @@ void entry() {
 			}
 		}
 	});
-	addListener([](Player
-		       Event& ev) {
+	addListener([](LevelExplodeEvent& ev) {
+		if (!ev.exp.cause && EXP_PLAY) {
+			ev.setCancelled();
+		}
+		if (fix_crash_bed_explode) {
+			ev.setCancelled();
+		}
+	});
+	addListener([](PlayerLeftEvent& ev) {
 		LOG(ev.getPlayer().getName(), "left server");
 		});
 	addListener([](PlayerCMDEvent& ev) {
@@ -268,16 +307,18 @@ void entry() {
 		LOG.l('<', ev.getPlayer().getName(), '>', ' ', ev.getChat());
 		});
 	addListener([](PlayerUseItemOnEvent& ev) {
+		if (ev.maySpam) return;
 		auto id = ev.getItemInHand()->getId();
 		auto it = CMDMAP.find(id);
-		if (it != CMDMAP.end()) ev.getPlayer().runcmd(it->second);
+		if (it != CMDMAP.end()) ev.getPlayer().runcmd(it->second),ev.setCancelled();
 		});
 	LOG("server started");
 	/*Handler::schedule(RepeatingTask([]() {
 		for (auto i : LocateS<WLevel>()->getUsers()) {
-			i.getBlockSource_().setBlock(i->getPos().x, i->getPos().y, i->getPos().z, VanillaBlocks::DiamondBlock(), 3);
+			Vec3 pos = i->getPos();
+			i.sendText(S(pos.x) + " " + S(pos.z) + " " + S(int(pos.x)) + " " + S(int(pos.z)) + " " + S(int(round(pos.x))) +" " + S(int(round(pos.z))));
 		}
-	}, 2));*/
+	}, 3));*/
 }
 THook(void, "?write@TextPacket@@UEBAXAEAVBinaryStream@@@Z", void* a, void* b) {
 	//+40 +48
@@ -287,4 +328,57 @@ THook(void, "?write@TextPacket@@UEBAXAEAVBinaryStream@@@Z", void* a, void* b) {
 		if (it != CNAME.end()) name = it->second;
 	}
 	original(a, b);
+}
+/*
+THook(void*, "?_sortAndPacketizeEvents@NetworkHandler@@AEAA_NAEAVConnection@1@V?$time_point@Usteady_clock@chrono@std@@V?$duration@_JU?$ratio@$00$0DLJKMKAA@@std@@@23@@chrono@std@@@Z", void* a, void* b, void* c) {
+	WatchDog dog("_sortAndPacketizeEvents");
+	return original(a, b, c);
+}
+*/
+static inline bool __isContainer(void* blk) {
+	void** vtbl = *(void***)blk;
+	bool (*call)(void);
+	call = (decltype(call))vtbl[0xc8 / 8];
+	return call();
+}
+THook(
+	void*,
+	"?createWeakPtr@BlockLegacy@@QEAA?AV?$WeakPtr@VBlockLegacy@@@@XZ",
+	void* thi, void* a1) {
+	if(__isContainer(thi) && FIX_PUSH_CHEST)
+		dAccess<unsigned long, 152>(thi) |= 0x1000000LL;
+	auto ret = original(thi, a1);
+	return ret;
+}
+THook(void*, "?write@StartGamePacket@@UEBAXAEAVBinaryStream@@@Z", void* a, void* b) {
+	if (FAKE_SEED) {
+		dAccess<int, 40>(a) = FAKE_SEED;
+	}
+	return original(a, b);
+}
+#ifdef TRACING_ENABLED
+THook(void*, "?tickWorld@ServerPlayer@@UEAAHAEBUTick@@@Z", void* a, void* b) {
+	WatchDog dog("tickWorld@ServerPlayer");
+	return original(a, b);
+}
+THook(void*, "?CompactRange@DBImpl@leveldb@@UEAAXPEBVSlice@2@0@Z", void* a, void* b, void* c) {
+	WatchDog dog("DB_COMPACT");
+	return original(a, b, c);
+}
+#endif
+THook(void*, "?onFertilized@GrassBlock@@UEBA_NAEAVBlockSource@@AEBVBlockPos@@PEAVActor@@W4FertilizerType@@@Z", void* thi, void* a1, void* a2, void* a3_bds_bugs_here, void* a4) {
+	if (a3_bds_bugs_here) return original(thi, a1, a2, a3_bds_bugs_here, a4);
+	return nullptr;
+}
+THook(void*, "?handle@ServerNetworkHandler@@UEAAXAEBVNetworkIdentifier@@AEBVCommandBlockUpdatePacket@@@Z", ServerNetworkHandler* thi, NetworkIdentifier& a2, unsigned char* pk) {
+	auto sp = thi->_getServerPlayer(a2, pk[16]);
+	if (sp) {
+		WPlayer wp{ *sp };
+		if (wp.getPermLvl() == 0) {
+			LOG("CMDBLOCK CHEAT!!", wp.getName());
+			return nullptr;
+		}
+		return original(thi, a2, pk);
+	}
+	return nullptr;
 }

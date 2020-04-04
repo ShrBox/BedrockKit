@@ -21,7 +21,7 @@ struct file_commit {
 	}
 	void operator()(string_view extra, string_view content) {
 		dat << extra;
-		dat << content << "\n";
+		dat << content << '\n';
 	}
 };
 template <typename... TP>

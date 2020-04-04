@@ -32,9 +32,11 @@
     <ClCompile Include="BDXTPA.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
+    <ClCompile Include="landAPI_stub.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Library Include="..\shared\LIGHTBASE.lib" />
-    <Library Include="..\shared\bdxland.lib" />
   </ItemGroup>
 </Project>

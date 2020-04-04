@@ -1,0 +1,7 @@
+{
+"EVENT_EXCEPTION_S":"发生异常 [%s] 于事件 %s 的监听器",
+"CMD_EXCEPTION":"命令执行时发生异常，请检查参数：",
+"CMD_SUCCESS":"命令已执行",
+"S_TARGET":"目标",
+"S_OPERATION":"操作"
+}

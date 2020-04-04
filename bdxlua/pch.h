@@ -15,4 +15,9 @@
 #include<api/types/types.h>
 #include<api/event/event_pch.h>
 #include<api/gui/gui.h>
+#include<luafly.h>
+#include"framework.h"
+#include<stl/KVDB.h>
+#include<mcapi/Level.h>
+#include<mcapi/Actor.h>
 #endif //PCH_H

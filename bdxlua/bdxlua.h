@@ -13,13 +13,34 @@
 #include<vector>
 #include<unordered_map>
 #include<stl\optional.h>
+#include<stl\static_queue.h>
 using std::variant,std::vector,std::unordered_map;
 typedef variant<long long, string> ldata_t;
 typedef ldata_t(*luacb_t)(vector<ldata_t>& arg);
 BDXLUA_API extern unordered_map<string, luacb_t> bindings;
-BDXLUA_API optional<ldata_t> call_lua(const char* name, vector<ldata_t> const& arg);
+struct ldata_ref_t {
+	union {
+		long long lv;
+		string const* sp;
+	} d;
+	bool isLong;
+	ldata_ref_t(long long x) {
+		d.lv = x;
+		isLong = true;
+	}
+	ldata_ref_t(string const* x) {
+		d.sp = x;
+		isLong = false;
+	}
+	string const& asStr() const{
+		return *d.sp;
+	}
+	long long asLL() const {
+		return d.lv;
+	}
+};
+BDXLUA_API optional<ldata_t> call_lua(const char* name, static_queue<ldata_ref_t,8> const& arg);
 #ifdef BDXLUA_EXPORTS
-bool _lpcall(int in, int out, const char* name);
 extern lua_State* L;
 int lua_bind_GUI(lua_State* L);
 #endif

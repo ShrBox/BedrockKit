@@ -4,14 +4,59 @@
 #include "pch.h"
 #include "bdxlua.h"
 lua_State* L;
+unique_ptr<KVDBImpl> db;
 BDXLUA_API unordered_map<string, luacb_t> bindings;
-bool _lpcall(int in, int out,const char* name) {
-	auto rv = lua_pcall(L, in, out, -in-1);
-	if (rv != 0) {
-		printf("[LUA] call lua %s error %s", name, lua_tostring(L, -1));
-		return false;
+BDXLUA_API optional<ldata_t> call_lua(const char* name, static_queue<ldata_ref_t,8> const& arg) {
+	lua_getglobal(L, "EXCEPTION");
+	auto EHIDX = lua_gettop(L);
+	if (lua_getglobal(L, name) == 0) {
+		printf("[LUA] function %s not found\n", name);
+		lua_settop(L, EHIDX - 1);
+		return {};
 	}
-	return true;
+	LuaFly fly{ L };
+	for (auto& i : arg) {
+		if (i.isLong) {
+			fly.push(i.asLL());
+		}
+		else {
+			fly.push(i.asStr());
+		}
+	}
+	if (!fly.pCall(name, arg.size(), -1, EHIDX)) {
+		lua_settop(L, EHIDX - 1);
+		return {};
+	}
+	auto rvcount = fly.top() - EHIDX;
+	if (!rvcount) {
+		lua_settop(L, EHIDX - 1);
+		return {};
+	}
+	else {
+		try {
+			if (lua_isstring(L, -1)) {
+				string x;
+				fly.pop(x);
+				lua_settop(L, EHIDX - 1);
+				return { {std::move(x)} };
+			}
+			else {
+				if (lua_isinteger(L, -1)) {
+					long long x;
+					fly.pop(x);
+					lua_settop(L, EHIDX - 1);
+					return { {x} };
+				}
+				else {
+					lua_settop(L, EHIDX - 1);
+					return { {0} };
+				}
+			}
+		}
+		catch (...) {
+			return {};
+		}
+	}
 }
 ldata_t _lpget(int i) {
 	if (lua_isinteger(L, i)) {
@@ -27,33 +72,6 @@ ldata_t _lpget(int i) {
 			return { 0 };
 		}
 	}
-}
-BDXLUA_API optional<ldata_t> call_lua(const char* name, vector<ldata_t> const& arg) {
-	int N = lua_gettop(L);
-	if (lua_getglobal(L, name) == 0) {
-		lua_settop(L, N);
-		return {};
-	}
-	for (auto& i : arg) {
-		if (i.index() == 0) {
-			lua_pushinteger(L, std::get<0>(i));
-		}
-		else {
-			lua_pushlstring(L, std::get<1>(i).data(), std::get<1>(i).size());
-		}
-	}
-	if (!_lpcall(arg.size(), -1, name)) {
-		lua_settop(L, N);
-		return {};
-	}
-	auto n = lua_gettop(L);
-	if (n != 0) {
-		auto rval = _lpget(-1);
-		lua_settop(L, N);
-		return rval;
-	}
-	lua_settop(L, N);
-	return { {0} };
 }
 int lua_call_bind_proxy(lua_State* L) {
 	auto n = lua_gettop(L);
@@ -175,14 +193,91 @@ int lb_oList(lua_State* L) {
 	}
 	return 1;
 }
+int lb_dbget(lua_State* L) {
+	try {
+		LuaFly fly{ L };
+		string rv;
+		string mainkey;
+		xstring key;
+		fly.pops(key,mainkey);
+		db->get(mainkey + "-" + key, rv);
+		fly.push(rv);
+		return 1;
+	}
+	catch (string e) {
+		luaL_error(L, e.c_str());
+		return 0;
+	}
+}
+int lb_dbput(lua_State* L) {
+	try {
+	LuaFly fly{ L };
+	string mainkey;
+	xstring key;
+	xstring cont;
+	fly.pops(cont, key, mainkey);
+	db->put(mainkey + "-" + key, cont);
+	return 0;
+}
+catch (string e) {
+	luaL_error(L, e.c_str());
+	return 0;
+}
+}
+int lb_dbdel(lua_State* L) {
+	try {
+	LuaFly fly{ L };
+	string mainkey;
+	xstring key;
+	fly.pops(key, mainkey);
+	db->del(mainkey + "-" + key);
+	return 0;
+}
+catch (string e) {
+	luaL_error(L, e.c_str());
+	return 0;
+}
+}
 void reg_all_bindings() {
 	lua_register(L, "lbind", lua_call_bind_proxy);
+	lua_register(L, "L", lua_call_bind_proxy);
 	lua_register(L, "sendText", lb_sendText);
 	lua_register(L, "runCmd", lb_runcmd);
 	lua_register(L, "runCmdAs", lb_runcmdAs);
 	lua_register(L, "oList", lb_oList);
 	lua_register(L, "oListV", lb_oListV);
 	lua_register(L, "GUI", lua_bind_GUI);
+	lua_register(L, "dget", lb_dbget);
+	lua_register(L, "ddel", lb_dbdel);
+	lua_register(L, "dput", lb_dbput);
+}
+bool dofile_lua(string const& name) {
+	std::ifstream ifs(name);
+	std::string str((std::istreambuf_iterator<char>(ifs)), std::istreambuf_iterator<char>());
+	auto state = luaL_loadbufferx(L, str.data(), str.size(), name.c_str(), nullptr);
+	if (state != 0) {
+		auto str = lua_tostring(L, -1);
+		printf("load lua error %s [%d\n", str, state);
+		return false;
+	}
+	else {
+		auto rv = lua_pcall(L, 0, LUA_MULTRET, 0);
+		if (rv != 0) {
+			auto str = lua_tostring(L, -1);
+			printf("call lua err %s [%d\n", str, rv);
+			return false;
+		}
+	}
+	return true;
+}
+#include<filesystem>
+#include"framework.h"
+string wstr2str(std::wstring const& str) {
+	string res;
+	int len = WideCharToMultiByte(GetACP(), 0, str.c_str(), str.size(), nullptr, 0, nullptr, nullptr);
+	res.append(len, 0);
+	WideCharToMultiByte(GetACP(), 0, str.c_str(), str.size(), res.data(), res.size(), nullptr, nullptr);
+	return res;
 }
 bool loadlua() {
 	if (L) {
@@ -191,39 +286,31 @@ bool loadlua() {
 	L = luaL_newstate();
 	luaL_openlibs(L);
 	reg_all_bindings();
-	std::ifstream ifs("lua/main.lua");
-	if (ifs.fail()) {
-		printf("Cannot open lua file lua/main.lua\n");
-		return false;
-	}
-	std::string str((std::istreambuf_iterator<char>(ifs)), std::istreambuf_iterator<char>());
-	auto state = luaL_loadbufferx(L, str.data(), str.size(), "main.lua", nullptr);	
-	if (state != 0) {
-		auto str = lua_tostring(L, -1);
-		printf("load lua error %s [%d\n", str,state);
-		return false;
-	}
-	else {
-		auto rv = lua_pcall(L, 0, LUA_MULTRET, 0);
-		if (rv != 0) {
-			auto str = lua_tostring(L, -1);
-			printf("call lua err %s [%d\n", str,rv);
-			return false;
+	using namespace std::filesystem;
+	{
+		directory_iterator ent("lua");
+		for (auto& i : ent) {
+			if (i.is_regular_file() && i.path().extension() == ".lua") {
+				dofile_lua(wstr2str(i.path()));
+			}
 		}
 	}
 	return true;
 }
 bool oncmd_lua(CommandOrigin const& ori, CommandOutput& outp, string& fn) {
 	auto caller = ori.getName();
-	if (lua_getglobal(L, ("u_" + fn).data()) == 0) {
+	lua_getglobal(L, "EXCEPTION");
+	auto EHIDX = lua_gettop(L);
+	if (lua_getglobal(L, ("u_" + fn).c_str()) == 0) {
 		outp.error("cant find fn");
 		return false;
 	}
 	lua_pushlstring(L, caller.data(), caller.size());
-	auto rv=lua_pcall(L, 1, 0, 0);
+	auto rv=lua_pcall(L, 1, 0, EHIDX);
 	if (rv != 0) {
 		auto str = lua_tostring(L, -1);
 		outp.error(string("lua error ")+str);
+		printf("[LUA] lua error in lcall %s for %s,->%s\n", ("u_" + fn).c_str(),caller.c_str(),str);
 		return false;
 	}
 	return true;
@@ -240,8 +327,29 @@ bool oncmd_gui(CommandOrigin const& ori, CommandOutput& outp,string& v) {
 	glang_send(wp.val(), getForm("u_" + v));
 	return true;
 }
+bool oncmd_luacmd(CommandOrigin const& ori, CommandOutput& outp, CommandMessage& m) {
+	string msg=m.get(ori);
+	return call_lua("onLCMD", { &ori.getName(),&msg }).set;
+}
+bool oncmd_dumpdb(CommandOrigin const& ori, CommandOutput& outp,string& target) {
+	bool flag = false;
+	db->iter([&](string_view k) {
+		if (k._Starts_with(target)) {
+			flag = true;
+			string v;
+			db->get(k, v);
+			outp.addMessage(string{ k.substr(target.size()) }+" = "+v);
+		}
+		else {
+			if (flag) return false;  //db->iter's key is ordered
+		}
+		return true;
+	});
+	return true;
+}
 void entry() {
 	using namespace std::filesystem;
+	db = MakeKVDB(GetDataPath("lua"));
 	create_directory("gui");
 	loadlua();
 	addListener([](RegisterCommandEvent&) {
@@ -251,19 +359,34 @@ void entry() {
 		CmdOverload(lreload, oncmd_reloadlua);
 		MakeCommand("gui", "show gui", 0);
 		CmdOverload(gui, oncmd_gui,"path");
+		MakeCommand("l", "use lua command", 1);
+		CmdOverload(l, oncmd_luacmd, "cmd");
+		MakeCommand("lua_db", "dump lua db", 1);
+		CmdOverload(lua_db, oncmd_dumpdb, "player_name-");
 	});
 	addListener([](PlayerJoinEvent& ev) {
 		auto& name = ev.getPlayer().getName();
-		call_lua("onJoin", { name });
+		call_lua("onJoin", { &name });
 	});
 	addListener([](PlayerChatEvent& ev) {
 		auto& name = ev.getPlayer().getName();
-		auto data=call_lua("onChat", { name,ev.getChat() });
+		auto data=call_lua("onChat", { &name,&ev.getChat() });
 		if (data.Set() && std::get<0>(data.value()) == -1) ev.setCancelled();
 	});
 	addListener([](PlayerCMDEvent& ev) {
 		auto& name = ev.getPlayer().getName();
-		auto data = call_lua("onCMD", { name,ev.getCMD() });
+		auto data = call_lua("onCMD", { &name,&ev.getCMD() });
 		if (data.Set() && std::get<0>(data.value()) == -1) ev.setCancelled();
+	});
+	addListener([](MobDeathEvent& ev) {
+		auto& src=ev.getSource();
+		if (src.isEntitySource() || src.isChildEntitySource()) {
+			auto id=src.getEntityUniqueID();
+			Actor* ac=LocateS<ServerLevel>()->fetchEntity(id, false);
+			ServerPlayer* sp=MakeSP(ac);
+			if (!sp) return;
+			WPlayer wp{ *sp };
+			call_lua("onPlayerKillMob", { &wp.getName(),ev.getMob()->getEntityTypeId() });
+		}
 	});
 }

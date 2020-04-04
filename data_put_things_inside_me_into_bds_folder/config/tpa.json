@@ -1,0 +1,6 @@
+{
+"max_homes":5,
+"tpa_timeout":20000,
+"tpa_ratelimit":5000,
+"home_land_distance":8
+}

@@ -210,7 +210,7 @@ void entry_npc() {
 		auto rtid = ev.rtid;
 		auto it = npcs.find(rtid);
 		if (it != npcs.end()) {
-			if (!call_lua(it->second.data.c_str(), { {ev.getPlayer().getName()} }).set) {
+			if (!call_lua(it->second.data.c_str(), { {&ev.getPlayer().getName() } }).set) {
 				ev.getPlayer().sendText("error calling lua");
 			}
 		}

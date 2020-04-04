@@ -3,7 +3,12 @@
 
 #include "pch.h"
 #include "BDXLand.h"
-
+typedef int s32;
+typedef int64_t s64;
+typedef uint64_t u64;
+typedef uint32_t u32;
+typedef uint16_t u16;
+typedef uint8_t u8;
 static Logger LOG(stdio_commit{ "[LAND] " });
 static LangPack LP("langpack/land.json");
 #define to_lpos(x) ((x) ^ 0x80000000)
@@ -104,17 +109,17 @@ namespace LandImpl {
 			rs.apply(x, z, dx, dz, lid, spec, dim, perm, owner);
 		}
 	};
-	static inline int __fail(const string& c,int line) {
-		printf("[LAND/FATAL :: %d] %s\n",line,c.c_str());
+	static inline void __fail(const string& c) {
+		printf("[LAND/FATAL] %s\n",c.c_str());
 		exit(1);
-		return 1;
 	}
-#define LAssert(x,y) (x)&&__fail(y,__LINE__)
 	namespace LandCacheManager {
 		static unordered_map<u32, FastLand*> cache;
 		static void noticeFree(u32 id) {
 			auto it = cache.find(id);
-			LAssert(it == cache.end(), "double free land "+S(id));
+			if (it == cache.end()) {
+				__fail("double free " + S(id));
+			}
 			it->second->refcount--;
 			if (it->second->refcount == 0) {
 				free(it->second);
@@ -125,11 +130,12 @@ namespace LandImpl {
 			auto it = cache.find(id);
 			if (it == cache.end()) {
 				string landstr;
-				LAssert(!db->get(to_view(id), landstr),"bad land "+S(id));
+				db->get(to_view(id), landstr);
 				FastLand* res = (FastLand*)malloc(landstr.size());
-				LAssert(!res, "bad_alloc");
+				if (!res) {
+					__fail("bad_alloc");
+				}
 				memcpy(res, landstr.data(), landstr.size());
-				LAssert(landstr.size() < sizeof(FastLand),"bad land "+S(id)+" "+S(landstr.size()));
 				res->refcount = 1;
 				cache[id] = res;
 				return res;
@@ -145,17 +151,23 @@ namespace LandImpl {
 		u32 mLandsCnt;
 		u32 managed_lands[256];
 		~ChunkLandManager() {
+			//LOG("defunct");
 			for (u32 i = 0; i < mLandsCnt; ++i) {
-				LandCacheManager::noticeFree(managed_lands[i]);
+				//LandCacheManager::noticeFree(managed_lands[i]);
 			}
 		}
 		ChunkLandManager(u32* landlist, u32 siz, lpos_t xx, lpos_t zz) {
 			memset(lands, 0, sizeof(lands));
 			mLandsCnt = siz;
-			memcpy(managed_lands, landlist, siz * sizeof(u32));
-			LAssert(mLandsCnt >= 256, "mlandscnt " + S(mLandsCnt));
+			if (mLandsCnt >= 256) {
+				__fail("mlandscnt");
+			}
 			for (u32 I = 0; I < siz; ++I) {
 				auto fl = LandCacheManager::requestLand(landlist[I]);
+				managed_lands[I] = landlist[I];
+				if (fl->x >> 4 != xx || fl->z >> 4 != zz || fl->dz >> 4 != zz || fl->dx >> 4 != xx) {
+					__fail("pos");
+				}
 				lpos_t sx, dx, sz, dz;
 				if ((fl->x >> 4) == xx)
 					sx = fl->x & 15;
@@ -180,18 +192,18 @@ namespace LandImpl {
 		}
 	};
 
-	static inline u64 ChunkID(lpos_t x, lpos_t z, u32 dim) {
-		u32 ids[2];
+	static inline u64 ChunkID(lpos_t x, lpos_t z, int dim) {
+		/*u32 ids[2];
 		ids[0] = x;
-		ids[1] = z;
-		ids[1] |=dim<<29;
-		return (*(u64*)(&ids));
-		/*u64 rv = x;
+		ids[1] = (z << 4)|dim;
+		return (*(u64*)(&ids));*/
+		u64 rv = x;
 		rv *= 0x100000000ull;
 		rv += ((u64)z) * 16;
 		rv += dim&3;
-		return rv;*/
+		return rv;
 	}
+	static ChunkLandManager EMPTYC(nullptr, 0, 0, 0);
 	template<typename TP,size_t CAP=24>
 	struct pool_allocator {
 		static_queue<TP*, CAP> q;
@@ -219,12 +231,12 @@ namespace LandImpl {
 		}
 	};
 	static pool_allocator<ChunkLandManager> CLDP;
-#if 1
+#if 0
 	struct ChunkDataWrapped
 	{
 		ChunkLandManager* v;
 		ChunkDataWrapped() {
-			v = nullptr;
+			v = &EMPTYC;
 		}
 		ChunkDataWrapped(lpos_t x, lpos_t z, int dim) {
 			string LList;
@@ -234,19 +246,15 @@ namespace LandImpl {
 				v=new ChunkLandManager((u32*)LList.data(), (u32)(LList.size() / sizeof(u32)), x, z);
 			}
 			else {
-				v = nullptr;
+				v = &EMPTYC;
 			}
 		}
 		~ChunkDataWrapped() {
-			if (v) {
+			if (v != &EMPTYC) {
 				delete v;
 				//CLDP.dealloc(v);
-				v = nullptr;
+				v = &EMPTYC;
 			}
-		}
-		FastLand const* get(int x, int z) {
-			if (!v) return nullptr;
-			return v->lands[x][z];
 		}
 	};
 #else
@@ -269,32 +277,35 @@ namespace LandImpl {
 		}
 	};
 #endif
-	static U64LRUmap<ChunkDataWrapped,73> LRUM_CHUNK(256);
+	static U64LRUmap<ChunkDataWrapped,67> LRUM_CHUNK(256);
 	static inline void purge_cache() {
-		LRUM_CHUNK.clear();
-		LAssert(LandCacheManager::cache.size(), "LandCacheManager::cache.size()");
+		//LandCacheManager::reset();
+		//CLMan.purge();
+		//LRUM_CHUNK.clear();
+		//if (LandCacheManager::cache.size()) {
+		//	__fail("LandCacheManager::cache.size()");
+		//}
 	}
-#if 1
-	static inline ChunkDataWrapped& getChunkMan(lpos_t x, lpos_t z, int dim) {
+	ChunkDataWrapped glb;
+#if 0
+	static inline ChunkLandManager* getChunkMan_NEW(lpos_t x, lpos_t z, int dim) {
 		u64 CID = ChunkID(x, z, dim);
 		auto res = LRUM_CHUNK.find(CID);
 		if (res) {
-			return *res;
+			return res->v;
 		}
 		else {
-			return *LRUM_CHUNK.insert(CID, x, z, dim);
+			return LRUM_CHUNK.insert(CID, x, z, dim)->v;
 		}
 	}
 #endif
-#if 0
 	static inline ChunkLandManager* getChunkMan(lpos_t x, lpos_t z, int dim) {
 		glb = ChunkDataWrapped(x, z, dim);
 		return &glb.v;
 	}
-#endif
-	static inline FastLand const* getFastLand(int x, int z, int dim) {
-		ChunkDataWrapped& cm = getChunkMan(to_lpos(x) >> 4, to_lpos(z) >> 4, dim);
-		return cm.get(x & 15,z & 15);
+	static inline FastLand* getFastLand(int x, int z, int dim) {
+		auto cm = getChunkMan(to_lpos(x) >> 4, to_lpos(z) >> 4, dim);
+		return cm->lands[x & 15][z & 15];
 	}
 
 	static u32 getLandUniqid() {
@@ -426,12 +437,10 @@ static bool oncmd(CommandOrigin const& ori, CommandOutput& outp,MyEnum<LANDPOP> 
 	{
 	case LANDPOP::A: {
 		SELECT_POINT[wp].mode=1;
-		outp.addMessage("click ground to select point A");
 	}
 		break;
 	case LANDPOP::B: {
 		SELECT_POINT[wp].mode=2;
-		outp.addMessage("click ground to select point B");
 	}
 		break;
 	case LANDPOP::exit: {
@@ -452,8 +461,8 @@ enum class LandFetchRes {
 
 using LandImpl::FastLand,LandImpl::getFastLand,LandImpl::LandPerm,LandImpl::DataLand;
 static std::pair<LandFetchRes, FastLand const*> FetchLandForOwner(WPlayer wp) {
-	IVec2 pos(wp->getPos());
-	auto fl = getFastLand(pos.x, pos.z, wp.getDimID());
+	std::pair<int,int> pos = {int(round(wp->getPos().x)), int(round(wp->getPos().z))};
+	auto fl = getFastLand(pos.first, pos.second, wp.getDimID());
 	if (!fl) {
 		return { LandFetchRes::noland,nullptr };
 	}
@@ -468,30 +477,29 @@ static FastLand const* genericPerm(int x,int z,WPlayer wp,LandPerm pm=LandPerm::
 	return nullptr;
 }
 
-BDXLAND_API u32 getLandIDAt(IVec2 vc, int dim) {
-	auto fl = getFastLand(vc.x, vc.z, dim);
+BDXLAND_API u32 getLandIDAt(int x, int z, int dim) {
+	auto fl = getFastLand(x, z, dim);
 	if (fl) return fl->lid; else return 0;
 }
-BDXLAND_API u32 checkLandRange(IVec2 vc, IVec2 vc2, int dim) {
-	for(int i=vc.x;i<=vc2.x;++i)
-		for (int j = vc.z; j <= vc2.z; ++j)
+BDXLAND_API u32 checkLandRange(int x, int z, int dx, int dz, int dim) {
+	for(int i=x;i<=dx;++i)
+		for (int j = z; j <= dz; ++j)
 		{
 			auto fl = getFastLand(i, j,dim);
 			if (fl) return fl->lid;
 		}
 	return 0;
 }
-BDXLAND_API bool checkLandOwnerRange(IVec2 vc, IVec2 vc2, int dim, unsigned long long xuid) {
-	for (int i = vc.x; i <= vc2.x; ++i)
-		for (int j = vc.z; j <= vc2.z; ++j)
+BDXLAND_API bool checkLandOwnerRange(int x, int z, int dx, int dz, int dim, unsigned long long xuid) {
+	for (int i = x; i <= dx; ++i)
+		for (int j = z; j <= dz; ++j)
 		{
 			auto fl = getFastLand(i, j, dim);
 			if (fl && fl->getOPerm(xuid)==0) return false;
 		}
 	return true;
 }
-
-static inline FastLand const* genericPerm(BlockPos const& pos, WPlayer wp, LandPerm pm=LandPerm::NOTHING) {	
+static inline FastLand const* genericPerm(BlockPos const& pos, WPlayer wp, LandPerm pm=LandPerm::NOTHING) {
 	return genericPerm(pos.x, pos.z, wp, pm);
 }
 static void LandGUIFor(WPlayer wp) {
@@ -670,54 +678,24 @@ static void loadConfig() {
 	}
 	catch (string e) {
 		LOG.p<LOGLVL::Fatal>("json error", e);
-		throw 0;
+		exit(1);
 	}
 }
 
 static void TEST() {
-	using namespace LandImpl;
-	std::random_device rdv;
-	int X = 10;
-	while (X-- > 0)
-		for (int i = 0; i <= 1000; ++i, i % 10 == 0 && printf("%d\n", i)) {
-			//for (int j = -1000; j <= 1000; ++j) {
-			//	LandImpl::getFastLand(i, j, 0);
-			//	LandImpl::getFastLand(i, j, 1);
-			//	LandImpl::getFastLand(i, j, 2);
-			for (int Z = 0; Z < 100; ++Z)
-				LandImpl::getFastLand((int)rdv(), (int)rdv(), rdv() & 3);
-			//}
-			if ((rdv() & 3) == 0) LandImpl::purge_cache();
-			//DBG_FLAG = 1;
-		}
-	printf("enter test\n");
 	for (int i = -100; i <= 100; ++i)
 		for (int j = -100; j <= 100; ++j) {
-			LandImpl::addLand(i, i, j, j, ((u32)i*233+(u32)j)&3, i * 1000 + j);
+			LandImpl::addLand(i, i, j, j, (i*233+j)%3, i * 1000 + j);
 		}
-	printf("->1\n");
+	printf("1\n");
 	for (int i = -1000; i <= 1000; ++i)
 		for (int j = -1000; j <= 1000; ++j) {
-			auto fl = LandImpl::getFastLand(i, j, ((u32)i*233+(u32)j)&3);
-			LAssert((!fl && i >= -100 && i <= 100 && j >= -100 && j <= 100) || (fl && fl->owner[0] != i * 1000 + j),"test failed");
-			fl = LandImpl::getFastLand(i, j, ((u32)i * 233 + (u32)j+1)&3);
-			LAssert(fl, "test2 failed");
+			auto fl = LandImpl::getFastLand(i, j, (i*233+j)%3);
+			if ((!fl && i >= -100 && i <= 100 && j >= -100 && j <= 100) || (fl && fl->owner[0] != i * 1000 + j)) {
+				LandImpl::__fail("aaa");
+			}
+			//LandImpl::removeLand(fl);
 		}
-	printf("->2\n");
-	X = 10;
-	while (X-- > 0)
-		for (int i = 0; i <= 1000; ++i, i % 10 == 0 && printf("%d\n", i)) {
-			//for (int j = -1000; j <= 1000; ++j) {
-			//	LandImpl::getFastLand(i, j, 0);
-			//	LandImpl::getFastLand(i, j, 1);
-			//	LandImpl::getFastLand(i, j, 2);
-			for (int Z = 0; Z < 100; ++Z)
-				LandImpl::getFastLand((int)rdv(), (int)rdv(), rdv() & 3);
-			//}
-			if ((rdv() & 3) == 0) LandImpl::purge_cache();
-			//DBG_FLAG = 1;
-		}
-
 	printf("TEST DONE\n");
 }
 static bool oncmd_dumpall(CommandOrigin const& ori, CommandOutput& outp) {
@@ -731,19 +709,25 @@ static bool oncmd_dumpall(CommandOrigin const& ori, CommandOutput& outp) {
 		}
 		return true;
 	});
+	/*XIDREG::foreach([](xuid_t a, string_view b) {
+		printf("g\n");
+		LOG(a, b);
+		return true;
+		});*/
+
 	return true;
 }
 static void FIX_BUG_0401() {
 	using LandImpl::db;
 	string val;
-	if (!db->get("BUG_0402_FIXED", val)) {
-		LOG("\n\nstart to fix BUG_0402\n\n");
+	if (!db->get("BUG_0401_FIXED", val)) {
+		LOG("\n\nstart to fix BUG_0401\n\n");
 		vector<std::tuple<u32,u32,u32,u32,int,u32>> lands;
 		vector<string> to_delete;
 		db->iter([&](string_view k, string_view v) {
 			if (k.size() == 4) {
 				FastLand* fl = (FastLand*)v.data();
-				if (fl->dx >= fl->x && fl->dz >= fl->z && v.size()>=sizeof(FastLand)) {
+				if (fl->dx >= fl->x && fl->dz >= fl->z) {
 					lands.emplace_back(fl->x, fl->dx, fl->z, fl->dz,fl->dim, fl->lid);
 				}
 				else {
@@ -761,23 +745,14 @@ static void FIX_BUG_0401() {
 		}
 		for (auto& [x, dx, z, dz, dim, lid] : lands)
 			LandImpl::proc_chunk_add(x>>4, dx>>4, z>>4, dz>>4, dim, lid);
-		db->put("BUG_0402_FIXED", "fixed");
+		db->put("BUG_0401_FIXED", "fixed");
 	}
-}
-void CHECK_MEMORY_LAYOUT() {
-	DataLand ld;
-	xuid_t xid = 114514;
-	ld.owner.append(to_view(xid));
-	auto sz = ld.serialize().size();
-	using LandImpl::__fail;
-	LAssert(sz != sizeof(FastLand) + sizeof(xuid_t), "MEM_LAYOUT_ERR");
 }
 void entry() {
 	LandImpl::INITDB();
-	CHECK_MEMORY_LAYOUT();
 	FIX_BUG_0401();
 	//WaitForDebugger();
-	//TEST();
+	TEST();
 	addListener([](RegisterCommandEvent&) {
 		CEnum<LANDPOP> _1("landpoint", {"a","b","exit"});
 		CEnum<LANDOP> _2("landop", {"buy","sell","info","gui"});
@@ -816,7 +791,6 @@ void entry() {
 			NoticePerm(ev.getPlayer(), fl);
 			return;
 		}
-		if (ev.maySpam) return;
 		//check select
 		auto it = SELECT_POINT._map.find(wp.v);
 		if (it == SELECT_POINT._map.end()) return;
@@ -838,35 +812,15 @@ void entry() {
 	}, EvPrio::HIGH);
 	addListener([](PlayerUseItemOnEntityEvent& ev) {
 		if (!ev.victim) return; //maybe player hit a npc?
-		IVec2 vc(ev.victim->getPos());
+		auto& pos = ev.victim->getPos();
 		LandPerm pm = ev.type == PlayerUseItemOnEntityEvent::TransType::ATTACK ? LandPerm::PERM_ATK : LandPerm::PERM_INTERWITHACTOR;
-		auto fl = genericPerm(vc.x, vc.z, ev.getPlayer(), pm);
+		auto fl = genericPerm(int(pos.x), int(pos.z), ev.getPlayer(), pm);
 		if (fl) {
 			ev.setCancelled();
 			ev.setAborted();
 			NoticePerm(ev.getPlayer(), fl);
 		}
 	},EvPrio::HIGH);
-	addListener([](MobHurtedEvent& ev) {
-		IVec2 pos (ev.getMob()->getPos());
-		FastLand const* fl = LandImpl::getFastLand(pos.x, pos.z, ev.getMob().actor()->getDimID());
-		if (fl) {
-			if (/*ev.getSource().isEntitySource() || We already filtered ent source in useitemOnEnt event*/ev.getSource().isChildEntitySource())
-			{
-				auto id = ev.getSource().getEntityUniqueID();
-				Actor* ac = LocateS<ServerLevel>()->fetchEntity(id, false);
-				ServerPlayer* sp = MakeSP(ac);
-				if (!sp) return;
-				WPlayer wp{ *sp };
-				if (fl->getOPerm(wp.getXuid()) == 0 && (fl->dim & LandPerm::PERM_ATK) == 0) {
-					ev.setAborted();
-					ev.setCancelled();
-					NoticePerm(wp, fl);
-					return;
-				}
-			}
-		}
-		}, EvPrio::HIGH);
 	loadConfig();
 }
 THook(void*, "?attack@ItemFrameBlock@@UEBA_NPEAVPlayer@@AEBVBlockPos@@@Z", void* a, void* b, void* c) {
@@ -889,46 +843,3 @@ THook(void, "?handle@ServerNetworkHandler@@UEAAXAEBVNetworkIdentifier@@AEBVItemF
 	}
 	return original(thi, a2, pk);
 }
-#if 0
-addListener([](MobHurtedEvent& ev) {
-	auto& pos = ev.getMob()->getPos();
-	FastLand* fl = LandImpl::getFastLand(pos.x, pos.z, ev.getMob().actor()->getDimID());
-	if (fl) {
-		if (/*ev.getSource().isEntitySource() || We already filtered ent source in useitemOnEnt event*/ev.getSource().isChildEntitySource())
-		{
-			auto id = ev.getSource().getEntityUniqueID();
-			Actor* ac = LocateS<ServerLevel>()->fetchEntity(id, false);
-			ServerPlayer* sp = MakeSP(ac);
-			if (!sp) return;
-			WPlayer wp{ *sp };
-			if (fl->getOPerm(wp.getXuid()) == 0 && (fl->dim & LandPerm::PERM_ATK) == 0) {
-				ev.setAborted();
-				ev.setCancelled();
-				NoticePerm(wp, fl);
-				return;
-			}
-		}
-	}
-	}, EvPrio::HIGH);
-#endif
-#if 0
-THook(bool, "?hurt@Actor@@QEAA_NAEBVActorDamageSource@@H_N1@Z", Actor& act,ActorDamageSource const& src,int dam_val,bool unk2,bool unk3 ) {
-	auto& pos = act.getPos();
-	FastLand* fl = LandImpl::getFastLand(pos.x, pos.z, WActor{ act }.getDimID());
-	if (fl) {
-		if (/*ev.getSource().isEntitySource() || We already filtered ent source in useitemOnEnt event*/src.isChildEntitySource())
-		{
-			auto id = src.getEntityUniqueID();
-			Actor* ac = LocateS<ServerLevel>()->fetchEntity(id, false);
-			ServerPlayer* sp = MakeSP(ac);
-			if (!sp) return original(act, src, dam_val, unk2, unk3);
-			WPlayer wp{ *sp };
-			if (fl->getOPerm(wp.getXuid()) == 0 && (fl->dim & LandPerm::PERM_ATK) == 0 && wp.getPermLvl()==0) {
-				NoticePerm(wp, fl);
-				return false;
-			}
-		}
-	}
-	return original(act, src, dam_val, unk2, unk3);
-}
-#endif

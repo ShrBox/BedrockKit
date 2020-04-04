@@ -35,4 +35,6 @@ using namespace std::string_literals;
 using std::make_shared, std::make_unique;
 
 #include<stl\useful.h>
+#include<debug/WatchDog.h>
+
 #endif

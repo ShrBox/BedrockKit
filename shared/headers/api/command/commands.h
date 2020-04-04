@@ -107,6 +107,7 @@ namespace CMDREG {
 			}
 			void execute(CommandOrigin const& a, CommandOutput& b) {
 				constexpr auto size = std::tuple_size<container>::value;
+				WATCH_ME("execute command "s + typeid(Dummy*).name());
 				try {
 					if (invoke_impl(a, b, std::make_index_sequence<size>{}))
 						b.success(I18N::CMD_SUCCESS, {});

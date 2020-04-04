@@ -59,10 +59,10 @@ namespace LEX {
     }
     std::pair<string_view, string_view> parseEntry(string_view rv) {
         auto eq = rv.find('=');
-        if (eq == rv.npos) throw "no '=' found in "s.append(rv);
+        if (eq == rv.npos) throw "no '=' found in ["s.append(rv)+"]";
         string_view key = rv.substr(0, eq);
         string_view val = rv.substr(eq + 1);
-        if (!trim(key) || !trim(val)) throw "no key/val found in "s.append(rv);
+        if (!trim(key) || !trim(val)) throw "no key/val found in ["s.append(rv) + "]";
         return { key,val };
     }
     constexpr size_t H(string_view x) {
@@ -125,7 +125,7 @@ namespace LEX {
                 else {
                     CV--;
                     if (CV >= val.size()) {
-                        throw "Compile IDX Overflow"s;
+                        throw "Compile IDX Overflow "s+S(CV)+" vs. "+S(val.size());
                     }
                     rv.append(val[CV]);
                 }
@@ -197,14 +197,18 @@ using LEX::H;
 
 void LUA_NOTIFY_CB2(const string& name, const string& pname) {
     if (name.size() == 0) return;
+    lua_getglobal(L, "EXCEPTION");
+    auto EHIDX = lua_gettop(L);
     if (lua_getglobal(L, name.c_str()) == 0) {
         printf("[LUA] guicb2 %s not found\n", name.c_str());
         return;
     }
     lua_pushlstring(L, pname.data(), pname.size());
-    _lpcall(1, 0, name.c_str());
+    LuaFly(L).pCall(name.c_str(), 1, 0, EHIDX);
 }
 void LUA_NOTIFY_SIMPLE(const string& name, const string& pname, int idx, const string& text) {
+    lua_getglobal(L, "EXCEPTION");
+    auto EHIDX = lua_gettop(L);
     if (lua_getglobal(L, name.c_str()) == 0) {
         printf("[LUA] guicb %s not found\n", name.c_str());
         return;
@@ -212,7 +216,7 @@ void LUA_NOTIFY_SIMPLE(const string& name, const string& pname, int idx, const s
     lua_pushlstring(L, pname.data(), pname.size());
     lua_pushinteger(L, idx);
     lua_pushlstring(L, text.data(), text.size());
-    _lpcall(3, 0, name.c_str());
+    LuaFly(L).pCall(name.c_str(), 3, 0, EHIDX);
 }
 void sendSimp(WPlayer w, std::stringstream& ss, string cb,string cb2,string && tit,string && cont) {
     using namespace GUI;
@@ -251,9 +255,14 @@ void sendFull(WPlayer w, std::stringstream& ss, string cb, string cb2, string&& 
         if (line.size() <= 3) continue;
         unordered_map<size_t, string_view> mp;
         vector<string_view> args;
-        LEX::parseEverything(line, mp, args);
+        try {
+            LEX::parseEverything(line, mp, args);
+        }
+        catch (string e) {
+            throw "error " + e + " in line [" + line + "]";
+        }
         auto it = mp.find(H("type"));
-        if (it == mp.end()) throw "must specify a type ["s + line;
+        if (it == mp.end()) throw "must specify a type at ["s + line;
         //GUIDropdown; GUIInput; GUILabel; GUISlider;GUIToggle
         switch (H(it->second)) {
         case H("dropdown"): {
@@ -282,14 +291,16 @@ void sendFull(WPlayer w, std::stringstream& ss, string cb, string cb2, string&& 
             break;
         }
         default: {
-            throw "invlaid type "s.append(it->second);
+            throw "invlaid type "s.append(it->second)+ "at [" + line;;
         }
         }
     }
     sendForm(w, FullFormBinder(sf, [cb, cb2](WPlayer w, FullFormBinder::DType d) {
         if (d.set) {
             auto [dat, ext] = d.val();
-            //push name,array(dat),array_str(ext)
+            //push name,array(dat),array_str(ext
+            lua_getglobal(L, "EXCEPTION");
+            auto EHIDX = lua_gettop(L);
             if (lua_getglobal(L, cb.c_str()) == 0) {
                 printf("[LUA] guicb %s not found\n", cb.c_str());
                 return;
@@ -322,8 +333,7 @@ void sendFull(WPlayer w, std::stringstream& ss, string cb, string cb2, string&& 
                     lua_rawseti(L, -2, ++idx);
                 }
             }
-
-            _lpcall(3, 0, cb.c_str());
+            LuaFly(L).pCall(cb.c_str(), 3, 0, EHIDX);
         }
         else {
             LUA_NOTIFY_CB2(cb2, w.getName());
@@ -336,7 +346,7 @@ void glang_send(WPlayer wp,const string& payload) {
     std::getline(ss, line);
     unordered_map<size_t, string_view> mp;
     vector<string_view> args;
-    LEX::parseEverything(line, mp, args);
+        LEX::parseEverything(line, mp, args);
     //step 3 sendForm
     auto& tp = mp[H("type")];
     auto luacb = mp[H("cb")];
@@ -381,35 +391,18 @@ int lua_bind_GUI(lua_State* L) {
         return 0;
     } //step 1 load form
     vector<string> X;
-    for (int i = 3; i < n; ++i) {
-        if (lua_istable(L, i)) {
-            string arstr = "[";
-            std::vector<std::pair<int, string>> mp;
-            lua_pushnil(L);
-            while (lua_next(L, i)) {
-                //val
-                size_t Ldat;
-                string dat{luaL_tolstring(L,-1,&Ldat),Ldat};
-                int IDX=lua_tointeger(L, -2);
-                lua_pop(L, 1);
-                mp.emplace_back(IDX, std::move(dat));
-            }
-            lua_pop(L, 1); //pop key
-            std::sort(mp.begin(), mp.end());
-            for (auto& [K, V] : mp) {
-                arstr += '"';
-                arstr += V;
-                arstr += "\",";
-            }
-            if (arstr.back() == ',') arstr.pop_back();
-            arstr.push_back(']');
-            X.emplace_back(std::move(arstr));
-        }
-        else {
-            size_t sz;
-            X.emplace_back(luaL_tolstring(L,i,&sz),sz);
-        }
-    } //step 2 lua->vector
+    try {
+        LuaFly fly{ L };
+        for (int i = 3; i <= n; ++i) {
+            xstring x;
+            fly.readx(x, i);
+            X.emplace_back(std::move(x));
+        } //step 2 lua->vector
+    }
+    catch (string e) {
+        luaL_error(L, e.c_str());
+        return 0;
+    }
     lua_settop(L, 0);
     try {
          auto compiled=LEX::Compile(sv, X);

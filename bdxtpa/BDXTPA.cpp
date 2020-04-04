@@ -7,6 +7,8 @@ static std::unique_ptr<KVDBImpl> db;
 static Logger LOG(stdio_commit{"[TPA] "});
 //#define CSUCC outp.success("done")
 #define CSUCC 
+bool checkLandOwnerRange_stub(IVec2 vc, IVec2 vc2, int dim, unsigned long long xuid);
+
 
 #pragma region structs
 enum direction :int {
@@ -420,12 +422,17 @@ bool generic_home(CommandOrigin const& ori, CommandOutput& outp, Homes& hm, MyEn
 		}
 		WPlayer wp = MakeWP(ori).val();
 		Vec4 vc{ wp };
-		if (!checkLandOwnerRange(iround(vc.vc.x - HOME_DISTANCE_LAND), iround(vc.vc.z - HOME_DISTANCE_LAND), iround(vc.vc.x + HOME_DISTANCE_LAND), iround(vc.vc.z + HOME_DISTANCE_LAND), vc.dimid, wp.getXuid())) {
+		IVec2 startVc{ wp->getPos() };
+		IVec2 endVc{ wp->getPos() };
+		startVc += -HOME_DISTANCE_LAND;
+		endVc += HOME_DISTANCE_LAND;
+		if (!checkLandOwnerRange_stub(startVc,endVc,vc.dimid,wp.getXuid())) {
 			outp.error(_TRS("home.near.others.land"));
 			return false;
 		}
 		hm.data.emplace_back(val.value(), vc);
 		hm.save();
+		outp.success("home point `" + val.value() + "` was set successfully!!");
 		CSUCC;
 	break;
 	}
@@ -495,12 +502,7 @@ bool oncmd_suicide(CommandOrigin const& ori, CommandOutput& outp) {
 	}
 	return true;
 }
-void loadall() {
-	string val;
-	if (db->get("warps", val)) {
-		RBStream rs{ val };
-		rs.apply(warps);
-	}
+void loadCfg() {
 	try {
 		ConfigJReader jr("config/tpa.json");
 		jr.bind("max_homes", MAX_HOMES, 5);
@@ -510,10 +512,23 @@ void loadall() {
 	}
 	catch (string e) {
 		LOG("JSON ERROR", e);
-		exit(1);
+		throw 0;
 	}
 }
+static bool onReload(CommandOrigin const& ori, CommandOutput& outp) {
+	loadCfg();
+	return true;
+}
+void loadall() {
+	string val;
+	if (db->get("warps", val)) {
+		RBStream rs{ val };
+		rs.apply(warps);
+	}
+	loadCfg();
+}
 void tpa_entry() {
+	checkLandOwnerRange_stub({ 0, 0 }, { 0, 0 }, 0, 0);
 	db=MakeKVDB(GetDataPath("tpa"), true, 8);
 	loadall();
 	reinitWARPGUI();
@@ -537,6 +552,8 @@ void tpa_entry() {
 		CmdOverload(tpa, oncmd_tpagui, "gui");
 		CmdOverload(back, oncmd_back);
 		CmdOverload(suicide, oncmd_suicide);
+		MakeCommand("tpareload", "reload tpa", 1);
+		CmdOverload(tpareload, onReload);
 	});
 	addListener([](PlayerDeathEvent& ev) {
 		auto p = ev.getPlayer();

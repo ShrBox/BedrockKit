@@ -5,11 +5,10 @@
 // BDXLAND_API 函数视为是从 DLL 导入的，而此 DLL 则将用此宏定义的
 // 符号视为是被导出的。
 #ifdef BDXLAND_EXPORTS
-#define BDXLAND_API __declspec(dllexport)
+#define BDXLAND_API extern "C" __declspec(dllexport)
 #else
 #define BDXLAND_API __declspec(dllimport)
 #endif
-BDXLAND_API unsigned int getLandIDAt(int x, int z, int dim);
-BDXLAND_API unsigned int checkLandRange(int x, int z, int dx, int dz, int dim);
-BDXLAND_API bool checkLandOwnerRange(int x, int z, int dx, int dz, int dim, unsigned long long xuid);
-#define iround(x) int(round(x))
+BDXLAND_API u32 getLandIDAt(IVec2 vc, int dim);
+BDXLAND_API u32 checkLandRange(IVec2 vc, IVec2 vc2, int dim);
+BDXLAND_API bool checkLandOwnerRange(IVec2 vc, IVec2 vc2, int dim, unsigned long long xuid);

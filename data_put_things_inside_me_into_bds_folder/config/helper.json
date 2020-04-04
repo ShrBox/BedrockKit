@@ -1,0 +1,11 @@
+{
+"force_enable_expplay":false,
+"enable_ability":true,
+"fix_crash_bed_explode":false,
+"FIX_PUSH_CHEST":false,
+"FAKE_SEED":1919810,
+"CMDMAP":{
+"114514":"say 1919810"
+},
+"Timers":[]
+}

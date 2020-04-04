@@ -225,7 +225,7 @@ void entry() {
 	}
 	catch (string e) {
 		LOG.p<LOGLVL::Error>("json error", e);
-		exit(1);
+		throw 0;
 	}
 	bindings.emplace("getMoney", getMoney_lua);
 	bindings.emplace("rdMoney", rdMoney_lua);

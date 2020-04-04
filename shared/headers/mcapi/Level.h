@@ -245,11 +245,6 @@ public:
 		*((void**)&rv) = dlsym("?onChunkDiscarded@Level@@QEAAXAEAVLevelChunk@@@Z");
 		return (this->*rv)(a0);
 	}
-	MCINLINE void addListener(class LevelListener& a0) {
-		void (Level::*rv)(class LevelListener&);
-		*((void**)&rv) = dlsym("?addListener@Level@@QEAAXAEAVLevelListener@@@Z");
-		return (this->*rv)(a0);
-	}
 	MCINLINE void startLeaveGame() {
 		void (Level::*rv)();
 		*((void**)&rv) = dlsym("?startLeaveGame@Level@@UEAAXXZ");

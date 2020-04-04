@@ -43,7 +43,7 @@ struct optional : Ioptional {
 			new (filler) T(x.value());
 		}
 	}
-	optional(optional<T>&& x) {
+	optional(optional<T>&& x) noexcept {
 		set = x.set;
 		if (set) {
 			new (filler) T(std::move(x.value()));

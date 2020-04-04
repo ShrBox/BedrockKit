@@ -7,6 +7,13 @@
 #include<stl/Bstream.h>
 enum ActorType : int;
 enum class AbilitiesIndex : int;
+static inline int iround(float x) {
+	int r = x;
+	if (x < 0)
+		r--;
+	return r;
+}
+
 class Vec3 {
 public:
 	float x, y, z;
@@ -24,12 +31,30 @@ public:
 class BlockPos {
 public:
 	int x, y, z;
+	inline bool operator==(BlockPos const& rv)const {
+		return x == rv.x && y == rv.y && z == rv.z;
+	}
+	inline bool operator!=(BlockPos const& rv)const {
+		return x != rv.x || y != rv.y || z != rv.z;
+	}
 	template<typename _TP>
 	void pack(WBStreamImpl<_TP>& ws) const {
 		ws.apply(x, y, z);
 	}
 	void unpack(RBStream& rs) {
 		rs.apply(x, y, z);
+	}
+};
+struct IVec2 {
+	int x, z;
+	IVec2(Vec3 l) {
+		x = iround(l.x);
+		z = iround(l.z);
+	}
+	IVec2(int a,int b):x(a),z(b){}
+	void operator+=(int v) {
+		x += v;
+		z += v;
 	}
 };
 template <typename A, typename T>

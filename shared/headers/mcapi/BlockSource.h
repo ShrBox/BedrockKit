@@ -355,11 +355,6 @@ public:
 		*((void**)&rv) = dlsym("?getSeenPercent@BlockSource@@QEAAMAEBVVec3@@AEBVAABB@@@Z");
 		return (this->*rv)(a0, a1);
 	}
-	MCINLINE void addListener(class BlockSourceListener& a0) {
-		void (BlockSource::*rv)(class BlockSourceListener&);
-		*((void**)&rv) = dlsym("?addListener@BlockSource@@QEAAXAEAVBlockSourceListener@@@Z");
-		return (this->*rv)(a0);
-	}
 	MCINLINE bool hasBorderBlock(class BlockPos a0) {
 		bool (BlockSource::*rv)(class BlockPos);
 		*((void**)&rv) = dlsym("?hasBorderBlock@BlockSource@@QEAA_NVBlockPos@@@Z");

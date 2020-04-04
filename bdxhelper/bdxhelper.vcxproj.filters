@@ -35,5 +35,6 @@
   </ItemGroup>
   <ItemGroup>
     <Library Include="..\shared\LIGHTBASE.lib" />
+    <Library Include="..\shared\BDXLUA.lib" />
   </ItemGroup>
 </Project>

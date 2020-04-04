@@ -26,4 +26,6 @@ using std::unordered_map;
 //#include<api\scheduler\scheduler.h>
 //#include<mcapi\VanillaBlocks.h>
 //#include<mcapi\BlockSource.h>
+#include<api\scheduler\scheduler.h>
+#include<bdxlua.h>
 #endif //PCH_H

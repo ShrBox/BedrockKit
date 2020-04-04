@@ -1,5 +1,7 @@
 ﻿#pragma once
+#include<initializer_list>
 #include"views.h"
+
 template<typename T,size_t CAP=256>
 class static_queue {
 	char data[sizeof(T) * CAP];
@@ -8,13 +10,19 @@ public:
 	static_queue() {
 		count = 0;
 	}
-	size_t size() {
+	static_queue(std::initializer_list<T> const& l) {
+		count = 0;
+		for (auto& i : l) {
+			push_back(i);
+		}
+	}
+	size_t size() const{
 		return count;
 	}
-	bool empty() {
+	bool empty() const {
 		return size() == 0;
 	}
-	bool full() {
+	bool full() const {
 		return size() == CAP;
 	}
 	void clear() {
@@ -27,15 +35,15 @@ public:
 		count++;
 		return *dst;
 	}
-	void push_back(T& arg) {
+	void push_back(T const& arg) {
 		T* dst = (T*)(data + count * sizeof(T));
 		count++;
 		new(dst)T(arg);
 	}
-	T& front() {
+	T& front() const {
 		return *(T*)data;
 	}
-	T& back() {
+	T& back() const {
 		T* dst = (T*)(data + (count-1) * sizeof(T));
 		return *dst;
 	}
@@ -44,17 +52,17 @@ public:
 		bk.~T();
 		count--;
 	}
-	T& operator[](size_t idx) {
+	T& operator[](size_t idx) const{
 		return *(T*)(data + idx * sizeof(T));
 	}
-	array_view<T> asView() {
+	array_view<T> asView() const{
 		return {(T*)data,((T*)data)+count};
 	}
-	operator array_view<T>() {
+	operator array_view<T>() const {
 		return asView();
 	}
 	struct iterator {
-		static_queue& thi;
+		static_queue const& thi;
 		size_t now;
 		bool operator==(const iterator& x) const{
 			return now == x.now;
@@ -72,10 +80,10 @@ public:
 			now++;
 		}
 	};
-	iterator begin() {
+	iterator begin() const{
 		return { *this,0 };
 	}
-	iterator end() {
+	iterator end() const{
 		return { *this,size() };
 	}
 };

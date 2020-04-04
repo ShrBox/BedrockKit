@@ -7,6 +7,9 @@ typedef unsigned int taskid_t;
 namespace Handler {
 	extern LIGHTBASE_API tick_t ticknow;
 	extern LIGHTBASE_API taskid_t gtaskid;
+	#ifdef LIGHTBASE_EXPORTS
+	extern LIGHTBASE_API tick_t _tick;
+	#endif
 	struct ITaskBase {
 		tick_t schedule_time;
 		tick_t interval;

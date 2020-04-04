@@ -1,3 +1,0 @@
-type=full,cb=CB,title=test
-type=dropdown,text=DROPDOWN,args=["114514","1919810"]
-type=input,text=INPUT,placeholder="good luck"

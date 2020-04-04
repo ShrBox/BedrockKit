@@ -62,7 +62,8 @@ public:
 	BlockPos& pos;
 	uchar side;
 	WItem item;
-	PlayerUseItemOnEvent(ServerPlayer& sp, BlockPos& _pos,WItem _item, uchar _side) : IGenericPlayerEvent(sp), pos(_pos), side(_side),item(_item) {}
+	bool maySpam;
+	PlayerUseItemOnEvent(ServerPlayer& sp, BlockPos& _pos,WItem _item, uchar _side,bool _spam) : IGenericPlayerEvent(sp), pos(_pos), side(_side),item(_item),maySpam(_spam) {}
 	BlockPos& getPos() {
 		return pos;
 	}

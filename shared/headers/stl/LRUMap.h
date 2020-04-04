@@ -26,6 +26,7 @@ struct List_node {
 	void detach() {
 		prev->next = next;
 		next->prev = prev;
+		prev=next=(List_node<_TP, false>*)this;
 	}
 #if 0
 	struct iterator {
@@ -53,13 +54,30 @@ struct List_node {
 		return iterator{ (List_node<_TP, false>*)this };
 	}
 #endif
-	void ins_back(List_node<_TP>& t) {
+	void ins_after(List_node<_TP>& t) {
 		t.next = next;
 		t.prev = (List_node<_TP, false>*)this;
 		next->prev = &t;
 		next = &t;
 	}
-	void ins_front(List_node<_TP>& t) {
+	void reattach_after(List_node<_TP,true>& t) {
+		/*prev->next = next;
+		next->prev = prev;
+		prev = next = (List_node<_TP, false>*)this;*/
+		/*
+		next = t.next;
+		prev = (List_node<_TP, false>*)&t;
+		t.next->prev = this;
+		t.next = this;
+		*/
+		prev->next = next;
+		next->prev = prev;
+		next = t.next;
+		prev = (List_node<_TP, false>*) &t;
+		t.next->prev = this;
+		t.next = this;
+	}
+	void ins_before(List_node<_TP>& t) {
 		t.prev = prev;
 		t.next = (List_node<_TP, false>*)this;
 		prev->next = &t;
@@ -84,22 +102,17 @@ struct LRUList {
 	LRUList(size_t _sz) : sz(_sz) {
 		data = new node[_sz]();
 		for (int i = 0; i < _sz; ++i) {
-			head.ins_front(data[i]);
+			head.ins_after(data[i]);
 		}
 	}
 	~LRUList() {
 		delete[] data;
 	}
-	auto begin() {
-		return head.begin();
-	}
-	auto end() {
-		return head.end();
-	}
 	TP& buy() {
 		auto it = head.prev;
-		it->detach();
-		head.ins_back(*it);
+		//it->detach();
+		//head.ins_after(*it);
+		it->reattach_after(head);
 		return it->get();
 	}
 };
@@ -138,14 +151,19 @@ struct U64LRUmap {
 		auto& bk = bucket[key % buksz];
 		auto NOW = bk.next;
 		auto END = (decltype(NOW))&bk;
+		int idx = 0;
 		while (NOW!=END)
 		{
 				if (NOW->val.hash == key) {
-					NOW->detach();
-					bk.ins_back(*NOW);
+					if (idx != 0) {
+						NOW->reattach_after(bk);
+						//NOW->detach();
+						//bk.ins_after(*NOW);
+					}
 					return &NOW->val.val;
 				}
 				NOW = NOW->next;
+				++idx;
 		} 
 		return nullptr;
 	}
@@ -153,11 +171,12 @@ struct U64LRUmap {
 	TP* insert(key_t key, P&&... val) {
 		auto& bk = bucket[key % buksz];
 		auto& nd = alloc.buy();
-		nd.detach();
 		nd.val.hash = key;
 		nd.val.val.~TP();
 		new (&nd.val.val) TP(std::forward<P>(val)...);
-		bk.ins_back(nd);
+		//nd.detach();
+		//bk.ins_after(nd);
+		nd.reattach_after(bk);
 		return &nd.val.val;
 	}
 };

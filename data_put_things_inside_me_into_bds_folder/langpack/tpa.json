@@ -17,5 +17,7 @@
 
 "tpa.back.use":"可以使用/back返回上一个死亡点！",
 
-"tpa.form":"{\"type\":\"form\",\"title\":\"TPA 请求\",\"content\":\"%s\",\"buttons\":[{\"text\":\"接 受\"},{\"text\":\"拒 绝\"}]}"
+"tpa.form":"{\"type\":\"form\",\"title\":\"TPA 请求\",\"content\":\"%s\",\"buttons\":[{\"text\":\"接 受\"},{\"text\":\"拒 绝\"}]}",
+
+"home.near.others.land":"你的家距离别人领地太近！"
 }
