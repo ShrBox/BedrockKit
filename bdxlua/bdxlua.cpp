@@ -30,7 +30,7 @@ BDXLUA_API optional<ldata_t> call_lua(const char* name, static_queue<ldata_ref_t
 	auto rvcount = fly.top() - EHIDX;
 	if (!rvcount) {
 		lua_settop(L, EHIDX - 1);
-		return {};
+		return { {0} };
 	}
 	else {
 		try {
@@ -200,9 +200,30 @@ int lb_dbget(lua_State* L) {
 		string mainkey;
 		xstring key;
 		fly.pops(key,mainkey);
-		db->get(mainkey + "-" + key, rv);
-		fly.push(rv);
+		auto has=db->get(mainkey + "-" + key, rv);
+		if(has)
+			fly.push(rv);
+		else
+			lua_pushnil(L);
 		return 1;
+	}
+	catch (string e) {
+		luaL_error(L, e.c_str());
+		return 0;
+	}
+}
+int lb_bctext(lua_State* L) {
+	//broadcast text
+	try {
+		LuaFly fly{ L };
+		xstring cont;
+		fly.pops(cont);
+		TextType tp{ RAW };
+		if (lua_gettop(L)) {
+			fly.pops(*(int*)&tp);
+		}
+		LocateS<WLevel>()->broadcastText(cont,tp);
+		return 0;
 	}
 	catch (string e) {
 		luaL_error(L, e.c_str());
@@ -242,6 +263,7 @@ void reg_all_bindings() {
 	lua_register(L, "lbind", lua_call_bind_proxy);
 	lua_register(L, "L", lua_call_bind_proxy);
 	lua_register(L, "sendText", lb_sendText);
+	lua_register(L, "bcText", lb_bctext);
 	lua_register(L, "runCmd", lb_runcmd);
 	lua_register(L, "runCmdAs", lb_runcmdAs);
 	lua_register(L, "oList", lb_oList);
@@ -295,6 +317,11 @@ bool loadlua() {
 			}
 		}
 	}
+	if (lua_getglobal(L, "EXCEPTION") == 0) {
+		printf("[LUA/Warn] no EXCEPTION handler found!!!\n");
+		return false;
+	}
+	lua_pop(L, 1);
 	return true;
 }
 bool oncmd_lua(CommandOrigin const& ori, CommandOutput& outp, string& fn) {
@@ -349,7 +376,7 @@ bool oncmd_dumpdb(CommandOrigin const& ori, CommandOutput& outp,string& target) 
 }
 void entry() {
 	using namespace std::filesystem;
-	db = MakeKVDB(GetDataPath("lua"));
+	db = MakeKVDB(GetDataPath("lua"),true,2);
 	create_directory("gui");
 	loadlua();
 	addListener([](RegisterCommandEvent&) {
@@ -368,6 +395,10 @@ void entry() {
 		auto& name = ev.getPlayer().getName();
 		call_lua("onJoin", { &name });
 	});
+	addListener([](PlayerLeftEvent& ev) {
+		auto& name = ev.getPlayer().getName();
+		call_lua("onLeft", { &name });
+		});
 	addListener([](PlayerChatEvent& ev) {
 		auto& name = ev.getPlayer().getName();
 		auto data=call_lua("onChat", { &name,&ev.getChat() });

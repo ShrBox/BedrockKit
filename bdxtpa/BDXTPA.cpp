@@ -120,6 +120,8 @@ static clock_t TPexpire=CLOCKS_PER_SEC*10;
 static clock_t TPratelimit=CLOCKS_PER_SEC*2;
 static int MAX_HOMES=5;
 static int HOME_DISTANCE_LAND = 0;
+static bool BACK_ENABLED, SUICIDE_ENABLED;
+
 
 playerMap<Vec4> deathPos;
 #pragma endregion
@@ -509,6 +511,8 @@ void loadCfg() {
 		jr.bind("tpa_timeout", TPexpire, CLOCKS_PER_SEC * 20);
 		jr.bind("tpa_ratelimit", TPratelimit, CLOCKS_PER_SEC * 5);
 		jr.bind("home_land_distance", HOME_DISTANCE_LAND, -1);
+		jr.bind("BACK_ENABLED", BACK_ENABLED, true);
+		jr.bind("SUICIDE_ENABLED", SUICIDE_ENABLED, true);
 	}
 	catch (string e) {
 		LOG("JSON ERROR", e);
@@ -542,22 +546,29 @@ void tpa_entry() {
 		MakeCommand("warp", "warp system", 0);
 		MakeCommand("home", "home system", 0);
 		MakeCommand("homeAs", "run home as a player", 1);
-		MakeCommand("back", "back to last deathpoint", 0);
-		MakeCommand("suicide", "kill yourself", 0);
+		
 		CmdOverload(warp, oncmd_warp,"op","name");
 		CmdOverload(home, oncmd_home,"op","name");
 		CmdOverload(homeAs, oncmd_homeAs,"Pname","op","home_name");
 		CmdOverload(tpa, oncmd_tpa, "dir","target");
 		CmdOverload(tpa, oncmd_tpa2, "op");
 		CmdOverload(tpa, oncmd_tpagui, "gui");
-		CmdOverload(back, oncmd_back);
-		CmdOverload(suicide, oncmd_suicide);
 		MakeCommand("tpareload", "reload tpa", 1);
 		CmdOverload(tpareload, onReload);
+		if (BACK_ENABLED) {
+			MakeCommand("back", "back to last deathpoint", 0);
+			CmdOverload(back, oncmd_back);
+		}
+		if (SUICIDE_ENABLED) {
+			MakeCommand("suicide", "kill yourself", 0);
+			CmdOverload(suicide, oncmd_suicide);
+		}
 	});
-	addListener([](PlayerDeathEvent& ev) {
-		auto p = ev.getPlayer();
-		deathPos[p.v] = Vec4{ p };
-		p.sendText(_TRS("tpa.back.use"));
-	});
+	if (BACK_ENABLED) {
+		addListener([](PlayerDeathEvent& ev) {
+			auto p = ev.getPlayer();
+			deathPos[p.v] = Vec4{ p };
+			p.sendText(_TRS("tpa.back.use"));
+			});
+	}
 }

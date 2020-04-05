@@ -28,4 +28,10 @@ using std::unordered_map;
 //#include<mcapi\BlockSource.h>
 #include<api\scheduler\scheduler.h>
 #include<bdxlua.h>
+#include<unordered_set>
+#include<bdxland.h>
+    extern Logger<stacked<stdio_commit, file_commit>> LOG;
+    extern bool EXP_PLAY;
+    extern int explosion_land_dist;
+    extern bool NO_EXPLOSION;
 #endif //PCH_H

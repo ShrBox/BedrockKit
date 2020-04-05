@@ -2,59 +2,20 @@
 //
 
 #include "pch.h"
-static Logger LOG(stacked{ stdio_commit{"[BH] "},file_commit{"bdx.log"} });
+
+void InitExplodeProtect();
+
+Logger<stacked<stdio_commit, file_commit>> LOG(stacked{ stdio_commit{"[BH] "},file_commit{"bdx.log"} });
 bool EXP_PLAY;
-/*from codehz/element-0*/
-
-THook(
-	void,
-	"?registerCommand@CommandRegistry@@QEAAXAEBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@"
-	"PEBDW4CommandPermissionLevel@@UCommandFlag@@3@Z",
-	uintptr_t a0, uintptr_t a1, uintptr_t a2, uintptr_t a3, uintptr_t a4, uintptr_t a5) {
-	original(a0, a1, a2, a3, a4, 0x40);
-}
-THook(
-	void**,
-	"?getEncryptedPeerForUser@NetworkHandler@@QEAA?AV?$weak_ptr@VEncryptedNetworkPeer@@@std@@AEBVNetworkIdentifier@@@Z",
-	void* a, void** b, void* c) {
-	b[0] = b[1] = NULL;
-	return b;
-}
-
-#pragma region expplay
-THook(
-	void,
-	"?setStack@ResourcePackManager@@QEAAXV?$unique_ptr@VResourcePackStack@@U?$default_delete@VResourcePackStack@@@std@@"
-	"@std@@W4ResourcePackStackType@@_N@Z",void* thi,
-	void* ptr, int type, bool flag) {
-	if(EXP_PLAY)
-		((char*)thi)[227] = EXP_PLAY;
-	original(thi, ptr, type, flag);
-}
-
-THook(void*, "??0MinecraftEventing@@QEAA@AEBVPath@Core@@@Z", void* a, void* b) {
-	// HACK FOR LevelSettings
-	char* access = (char*)b + 2800;
-	access[76] = EXP_PLAY;
-	//access[36] = settings.education_feature;
-	return original(a, b);
-}
-
-THook(bool, "?isEnabled@FeatureToggles@@QEBA_NW4FeatureOptionID@@@Z",void* thi, int id) {
-	if (EXP_PLAY) return true;
-	return original(thi, id);
-}
-THook(void, "??0LevelSettings@@QEAA@AEBV0@@Z", char* lhs, char* rhs) {
-	rhs[76] = EXP_PLAY;
-	//rhs[36] = settings.education_feature;
-	original(lhs, rhs);
-}
-#pragma endregion
 unordered_map<int, string> CMDMAP;
 bool regABILITY;
 bool fix_crash_bed_explode, FIX_PUSH_CHEST;
 int FAKE_SEED;
 vector<taskid_t> TASKS;
+std::unordered_set<short> logItems,banItems;
+int explosion_land_dist;
+bool NO_EXPLOSION;
+
 void loadCfg() {
 	try {
 		CMDMAP.clear();
@@ -69,8 +30,18 @@ void loadCfg() {
 		jr.bind("fix_crash_bed_explode", fix_crash_bed_explode, false);
 		jr.bind("FIX_PUSH_CHEST", FIX_PUSH_CHEST, false);
 		jr.bind("FAKE_SEED", FAKE_SEED, 114514);
+		jr.bind("explosion_land_dist", explosion_land_dist, -1);
+		jr.bind("NO_EXPLOSION", NO_EXPLOSION, false);
 		vector<string> Timers;
 		jr.bind("Timers", Timers, {});
+		vector<int> items;
+		logItems.clear();
+		banItems.clear();
+		jr.bind("logItems", items, {});
+		for (auto i : items) logItems.insert(i);
+		items.clear();
+		jr.bind("banItems", items, {});
+		for (auto i : items) banItems.insert(i);
 		if (EXP_PLAY) {
 			LOG("EXP Play mode is BUGGY!!!");
 		}
@@ -238,9 +209,29 @@ static bool onReload(CommandOrigin const& ori, CommandOutput& outp) {
 	loadCfg();
 	return true;
 }
+static bool oncmd_toggle_debug(CommandOrigin const& ori, CommandOutput& outp) {
+	static LInfo<PlayerUseItemOnEvent> id;
+	static LInfo<MobDeathEvent> id2;
+	if (id.id != -1) {
+		removeListener(id);
+		removeListener(id2);
+		outp.success("disabled");
+	}
+	else {
+		id = addListener([](PlayerUseItemOnEvent& ev) {
+			ev.getPlayer().sendText(ev.getItemInHand()->toString());
+		}, EvPrio::HIGH);
+		id2 = addListener([](MobDeathEvent& ev) {
+			LocateS<WLevel>()->broadcastText(S(ev.getMob()->getEntityTypeId())+" died");
+		}, EvPrio::HIGH);
+		outp.success("enabled");
+	}
+	return true;
+}
 void entry() {
 	loadCfg();
 	loadCNAME();
+	InitExplodeProtect();
 	addListener([](RegisterCommandEvent& ev) {
 		CEnum<CNAMEOP> _1("cnameop", { "set","rm" });
 		CEnum<BANOP> _2("banop", {"ban","unban","banip"});
@@ -258,6 +249,8 @@ void entry() {
 		CmdOverload(skick, onCMD_skick, "target");
 		MakeCommand("hreload", "reload cmdhelper", 1);
 		CmdOverload(hreload, onReload);
+		MakeCommand("idbg", "toggle debug mode", 1);
+		CmdOverload(idbg, oncmd_toggle_debug);
 		if (regABILITY) {
 			SymCall("?setup@AbilityCommand@@SAXAEAVCommandRegistry@@@Z", void, CommandRegistry&)(LocateS<CommandRegistry>());
 		}
@@ -307,18 +300,27 @@ void entry() {
 		LOG.l('<', ev.getPlayer().getName(), '>', ' ', ev.getChat());
 		});
 	addListener([](PlayerUseItemOnEvent& ev) {
-		if (ev.maySpam) return;
 		auto id = ev.getItemInHand()->getId();
+		if (ev.getPlayer().getPermLvl() == 0) {
+			if (logItems.count(id)) {
+				LOG("player", ev.getPlayer().getName(), "used warning item", ev.getItemInHand()->toString());
+				return;
+			}
+			else {
+				if (banItems.count(id)) {
+					LOG("player", ev.getPlayer().getName(), "used banned item", ev.getItemInHand()->toString());
+					ev.getPlayer().sendText("banned item");
+					ev.setAborted();
+					ev.setCancelled();
+					return;
+				}
+			}
+		}
+		if (ev.maySpam) return;
 		auto it = CMDMAP.find(id);
 		if (it != CMDMAP.end()) ev.getPlayer().runcmd(it->second),ev.setCancelled();
 		});
 	LOG("server started");
-	/*Handler::schedule(RepeatingTask([]() {
-		for (auto i : LocateS<WLevel>()->getUsers()) {
-			Vec3 pos = i->getPos();
-			i.sendText(S(pos.x) + " " + S(pos.z) + " " + S(int(pos.x)) + " " + S(int(pos.z)) + " " + S(int(round(pos.x))) +" " + S(int(round(pos.z))));
-		}
-	}, 3));*/
 }
 THook(void, "?write@TextPacket@@UEBAXAEAVBinaryStream@@@Z", void* a, void* b) {
 	//+40 +48
@@ -329,12 +331,6 @@ THook(void, "?write@TextPacket@@UEBAXAEAVBinaryStream@@@Z", void* a, void* b) {
 	}
 	original(a, b);
 }
-/*
-THook(void*, "?_sortAndPacketizeEvents@NetworkHandler@@AEAA_NAEAVConnection@1@V?$time_point@Usteady_clock@chrono@std@@V?$duration@_JU?$ratio@$00$0DLJKMKAA@@std@@@23@@chrono@std@@@Z", void* a, void* b, void* c) {
-	WatchDog dog("_sortAndPacketizeEvents");
-	return original(a, b, c);
-}
-*/
 static inline bool __isContainer(void* blk) {
 	void** vtbl = *(void***)blk;
 	bool (*call)(void);
@@ -356,29 +352,42 @@ THook(void*, "?write@StartGamePacket@@UEBAXAEAVBinaryStream@@@Z", void* a, void*
 	}
 	return original(a, b);
 }
-#ifdef TRACING_ENABLED
-THook(void*, "?tickWorld@ServerPlayer@@UEAAHAEBUTick@@@Z", void* a, void* b) {
-	WatchDog dog("tickWorld@ServerPlayer");
-	return original(a, b);
-}
-THook(void*, "?CompactRange@DBImpl@leveldb@@UEAAXPEBVSlice@2@0@Z", void* a, void* b, void* c) {
-	WatchDog dog("DB_COMPACT");
-	return original(a, b, c);
-}
-#endif
-THook(void*, "?onFertilized@GrassBlock@@UEBA_NAEAVBlockSource@@AEBVBlockPos@@PEAVActor@@W4FertilizerType@@@Z", void* thi, void* a1, void* a2, void* a3_bds_bugs_here, void* a4) {
-	if (a3_bds_bugs_here) return original(thi, a1, a2, a3_bds_bugs_here, a4);
-	return nullptr;
-}
-THook(void*, "?handle@ServerNetworkHandler@@UEAAXAEBVNetworkIdentifier@@AEBVCommandBlockUpdatePacket@@@Z", ServerNetworkHandler* thi, NetworkIdentifier& a2, unsigned char* pk) {
-	auto sp = thi->_getServerPlayer(a2, pk[16]);
-	if (sp) {
-		WPlayer wp{ *sp };
-		if (wp.getPermLvl() == 0) {
-			LOG("CMDBLOCK CHEAT!!", wp.getName());
-			return nullptr;
+class InventorySource {
+	char filler[12];
+};
+class InventoryAction {
+	char filler[152 + 152 - 16];
+};
+
+bool CheckItemTrans(unordered_map<class InventorySource, vector<InventoryAction>>* mp,const string& plyname) {
+	for (auto& [k, v] : *mp) {
+		for (auto& action : v) {
+			/*
+			auto maysource = dAccess<u32, 0>(&action);
+			auto maysource1 = dAccess<u32, 4>(&action); //???
+			auto maypadding = dAccess<u32, 8>(&action); //may padding
+			auto slot = dAccess<u32, 12>(&action);
+			auto from = dAccess<ItemStackBase, 16>(&action).toString();
+			auto to = dAccess<ItemStackBase, 152>(&action).toString();
+			LOG(maysource, maysource1, maypadding, slot, from, to);
+			*/
+			short id1 = dAccess<ItemStackBase, 16>(&action).getId();
+			short id2 = dAccess<ItemStackBase, 152>(&action).getId();
+			auto& item1 = dAccess<ItemStackBase, 16>(&action);
+			auto& item2 = dAccess<ItemStackBase, 152>(&action);
+#define LOGITEM(set,id,type,item) if(set.count(id)) LOG("player",plyname," used " type,"item",item.toString())
+#define LOGITEM2(set,id,type,item) if(set.count(id)) {LOG("player",plyname," used " type,"item",item.toString());return true;}
+			LOGITEM(logItems, id1, "warning", item1);
+			LOGITEM(logItems, id2, "warning", item2);
+			LOGITEM2(banItems, id1, "banned", item1);
+			LOGITEM2(banItems, id2, "banned", item2);
 		}
-		return original(thi, a2, pk);
 	}
-	return nullptr;
+	return false;
+}
+THook(void*, "?executeFull@InventoryTransaction@@QEBA?AW4InventoryTransactionError@@AEAVPlayer@@_N@Z", unordered_map<class InventorySource, vector<class InventoryAction>>* thi, ServerPlayer& sp, bool unk) {
+	if (sp.getCommandPermissionLevel() == 0) {
+		if (CheckItemTrans(thi, WPlayer{ sp }.getName())) return nullptr;
+	}
+	return original(thi, sp, unk);
 }

@@ -358,7 +358,7 @@ void glang_send(WPlayer wp,const string& payload) {
     }
     else {
         if (tp == "simple") {
-            sendSimp(wp, ss, string{ luacb }, string{ luacb2 }, string{ title }, string{ content });
+            sendSimp(wp, ss, string{ luacb }, string{ luacb2 }, string{ title }, ProcessLabel(content));
         }
         else {
             throw "form type can only be (full,simple)"s;

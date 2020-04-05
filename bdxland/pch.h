@@ -24,7 +24,6 @@
 #include<api\refl\playerMap.h>
 #include<stl\langPack.h>
 #include<mcapi\Level.h>
-#include"bdxmoney.h"
 
 #include<mcapi/Player.h>
 #include<mcapi/Item.h>

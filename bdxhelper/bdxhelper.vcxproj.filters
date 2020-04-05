@@ -32,6 +32,21 @@
     <ClCompile Include="BDXHelper.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
+    <ClCompile Include="landAPI_stub.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="bugfixes.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="noencrypt.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="expplay.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="noexplosion.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Library Include="..\shared\LIGHTBASE.lib" />

@@ -3,77 +3,28 @@
 
 #include "pch.h"
 #include "BDXLand.h"
-
+#include "shared.h"
 static Logger LOG(stdio_commit{ "[LAND] " });
-static LangPack LP("langpack/land.json");
+LangPack LP("langpack/land.json");
 #define to_lpos(x) ((x) ^ 0x80000000)
 namespace LandImpl {
 	using std::list;
 	using std::swap;
 	using std::unordered_map;
 	static std::unique_ptr<KVDBImpl> db;
-	typedef u32 lpos_t;
 	typedef u64 xuid_t;
-	enum LandPerm : u16 {
-		NOTHING = 0,   //no perm specified , must be owner to operate
-		PERM_INTERWITHACTOR = 1,
-		PERM_USE = 2,  //null hand place
-		PERM_ATK = 4,  //attack entity
-		PERM_BUILD = 8, //nonnull hand place
-		PERM_DESTROY=16,
-		PERM_ITEMFRAME=32
-	};
 
-	struct FastLand {
-		lpos_t x, z, dx, dz; //4*int
-		u32 lid; //5*int
-		u32 refcount; //6*int
-		u16 dim;
-		LandPerm perm; //7*int
-		u32 owner_sz; //8*int
-		xuid_t owner[0];
-		inline int getOPerm(xuid_t x) const {
-			u32 owner_sz2 = owner_sz >> 3;
-			for (u32 i = 0; i < owner_sz2; ++i) {
-				if (owner[i] == x) return 1 + (i == 0);
-			}
-			return 0;
-		}
-		inline bool hasPerm(xuid_t x, LandPerm PERM) const {
-			return ((perm & PERM) != 0) || (getOPerm(x) > 0);
-		}
-		inline string_view getOwnerView() const {
-			return { (char*)owner,owner_sz };
-		}
-		inline array_view<xuid_t> OWNER() const {
-			return { owner,owner_sz>>3 };
-		}
-		inline string ownStr() const{
-			string rv;
-			u32 owner_sz2 = owner_sz >> 3;
-			for (u32 i = 0; i < owner_sz2; ++i) {
-				auto name=XIDREG::id2str(owner[i]);
-				if (name.set) {
-					rv += name.val();
-					rv += ',';
-				}
-				else {
-					rv += S(owner[i]) + ',';
-				}
-			}
-			if (rv.size()) rv.pop_back();
-			return rv;
-		}
-	};
+	//FastLand in shared.h
 	static_assert(sizeof(FastLand) == sizeof(u32) * 8);
 	static_assert(offsetof(FastLand, owner) == sizeof(u32) * 8);
-	static_assert(offsetof(FastLand, perm) == sizeof(u32) * 6 + sizeof(u16));
+	static_assert(offsetof(FastLand, perm_others) == sizeof(u32) * 6 + sizeof(u16));
 	struct DataLand {
 		lpos_t x, z, dx, dz; //4*int
 		u32 lid; //5*int
-		u32 spec; //6*int
+		u16 spec;  //refcount
+		LandPerm perm_group;//6*int
 		u16 dim;
-		LandPerm perm; //7*int
+		LandPerm perm_others; //7*int
 		string owner;
 		DataLand() {}
 		DataLand(FastLand const& fastland) {
@@ -84,7 +35,8 @@ namespace LandImpl {
 			lid = fastland.lid;
 			spec = fastland.refcount;
 			dim = fastland.dim;
-			perm = fastland.perm;
+			perm_group = fastland.perm_group;
+			perm_others = fastland.perm_others;
 			owner = fastland.getOwnerView();
 		}
 		void addOwner(xuid_t x, bool SuperOwner = false) {
@@ -97,11 +49,11 @@ namespace LandImpl {
 		}
 		string serialize() const {
 			WBStream ws;
-			ws.apply(x, z, dx, dz, lid, spec, dim, perm, owner);
+			ws.apply(x, z, dx, dz, lid, spec, perm_group, dim, perm_others, owner);
 			return ws.data;
 		}
 		void deserialize(RBStream rs) {
-			rs.apply(x, z, dx, dz, lid, spec, dim, perm, owner);
+			rs.apply(x, z, dx, dz, lid, spec, perm_group, dim, perm_others, owner);
 		}
 	};
 	static inline int __fail(const string& c,int line) {
@@ -127,7 +79,10 @@ namespace LandImpl {
 				string landstr;
 				LAssert(!db->get(to_view(id), landstr),"bad land "+S(id));
 				FastLand* res = (FastLand*)malloc(landstr.size());
-				LAssert(!res, "bad_alloc");
+				if (!res) {
+					LOG.l<LOGLVL::Fatal>("bad_alloc");
+					exit(1);
+				}
 				memcpy(res, landstr.data(), landstr.size());
 				LAssert(landstr.size() < sizeof(FastLand),"bad land "+S(id)+" "+S(landstr.size()));
 				res->refcount = 1;
@@ -223,6 +178,8 @@ namespace LandImpl {
 	struct ChunkDataWrapped
 	{
 		ChunkLandManager* v;
+		ChunkDataWrapped(ChunkDataWrapped const&) = delete;
+		ChunkDataWrapped& operator=(ChunkDataWrapped const&) = delete;
 		ChunkDataWrapped() {
 			v = nullptr;
 		}
@@ -230,8 +187,8 @@ namespace LandImpl {
 			string LList;
 			u64 CID = ChunkID(x, z, dim);
 			if (db->get(to_view(CID), LList)) {
-				//v = CLDP.alloc((u32*)LList.data(), (u32)(LList.size() / sizeof(u32)), x, z);
-				v=new ChunkLandManager((u32*)LList.data(), (u32)(LList.size() / sizeof(u32)), x, z);
+				v = CLDP.alloc((u32*)LList.data(), (u32)(LList.size() / sizeof(u32)), x, z);
+				//v=new ChunkLandManager((u32*)LList.data(), (u32)(LList.size() / sizeof(u32)), x, z);
 			}
 			else {
 				v = nullptr;
@@ -239,8 +196,8 @@ namespace LandImpl {
 		}
 		~ChunkDataWrapped() {
 			if (v) {
-				delete v;
-				//CLDP.dealloc(v);
+				//delete v;
+				CLDP.dealloc(v);
 				v = nullptr;
 			}
 		}
@@ -341,7 +298,8 @@ namespace LandImpl {
 		DataLand ld;
 		ld.x = x, ld.z = z, ld.dx = dx, ld.dz = dz, ld.dim = dim;
 		ld.owner = to_view(owner);
-		ld.perm = perm;
+		ld.perm_others = perm;
+		ld.perm_group = PERM_FULL;
 		auto lid = getLandUniqid();
 		ld.lid = lid;
 		db->put(to_view(lid), ld.serialize());
@@ -362,40 +320,8 @@ namespace LandImpl {
 	}
 };
 
-
-struct PointSelector {
-	int mode;
-	int dim;
-	bool selectedA;
-	bool selectedB;
-	BlockPos A;
-	BlockPos B;
-	std::tuple<int,int,int,int> pos() {
-		return { std::min(A.x,B.x),std::max(A.x,B.x),std::min(A.z,B.z),std::max(A.z,B.z) };
-	}
-	bool click(BlockPos pos,int _dim) {
-		if (mode == 1) { //A
-			selectedA = true;
-			A = pos;
-			return true;
-		}
-		else {
-			if (dim != _dim || !selectedA) return false;
-			B = pos;
-			selectedB = true;
-			return true;
-		}
-	}
-	size_t size() {
-		auto [x, dx, z, dz] = pos();
-		return ((size_t)dx - x + 1) * ((size_t)dz - z + 1);
-	}
-	bool selected() {
-		return selectedA && selectedB;
-	}
-};
 static playerMap<PointSelector> SELECT_POINT;
-static int BUY_PRICE, SELL_PRICE;
+int BUY_PRICE, SELL_PRICE;
 static bool PROTECT_FARM,PROTECT_IFRAME;
 
 #pragma region CMDENUM
@@ -411,7 +337,8 @@ enum class LANDOP2 :int {
 	give = 3
 };
 enum class LANDOP_PERM :int {
-	perm = 1
+	perm_o = 1, //others
+	perm_g=2 //group
 };
 enum class LANDPOP :int {
 	A = 1,
@@ -443,14 +370,14 @@ static bool oncmd(CommandOrigin const& ori, CommandOutput& outp,MyEnum<LANDPOP> 
 	}
 	return true;
 }
-#define OERR(x) outp.error(_TRS(x))
+
 enum class LandFetchRes {
 	success=1,
 	noland=2,
 	noperm=3
 };
 
-using LandImpl::FastLand,LandImpl::getFastLand,LandImpl::LandPerm,LandImpl::DataLand;
+using LandImpl::getFastLand,LandImpl::DataLand;
 static std::pair<LandFetchRes, FastLand const*> FetchLandForOwner(WPlayer wp) {
 	IVec2 pos(wp->getPos());
 	auto fl = getFastLand(pos.x, pos.z, wp.getDimID());
@@ -464,8 +391,8 @@ static FastLand const* genericPerm(int x,int z,WPlayer wp,LandPerm pm=LandPerm::
 	if (wp.getPermLvl() > 0) return nullptr;
 	auto fl = getFastLand(x, z, wp.getDimID());
 	if (!fl) return nullptr;
-	if (fl->getOPerm(wp.getXuid()) == 0 && (fl->perm & (unsigned short)pm) == 0) return fl;
-	return nullptr;
+	if (fl->hasPerm(wp.getXuid(),pm)) return nullptr;
+	return fl;
 }
 
 BDXLAND_API u32 getLandIDAt(IVec2 vc, int dim) {
@@ -523,22 +450,7 @@ static bool oncmd_2(CommandOrigin const& ori, CommandOutput& outp, MyEnum<LANDOP
 			}
 			auto [x, dx, z, dz] = point.pos();
 			auto dim = point.dim;
-			if (wp.getPermLvl() < 1) {
-				if (point.size() > 100000) {
-					OERR("land.too.big");
-					return false;
-				}
-				size_t lsz = point.size();
-				if (lsz * BUY_PRICE > 2100000000) {
-					OERR("land.too.big");
-					return false;
-				}
-				auto mone = Money::getMoney(wp.getXuid());
-				if ((size_t)mone < (lsz * BUY_PRICE)) {
-					OERR("land.no.money");
-					return false;
-				}
-			}
+			if (!land_buy_first_step(wp, outp, point)) return false;
 			LOG("land buy step1", x, dx, z, dz);
 			for (int i = x; i <= dx; ++i) {
 				for (int j = z; j <= dz; ++j) {
@@ -549,12 +461,7 @@ static bool oncmd_2(CommandOrigin const& ori, CommandOutput& outp, MyEnum<LANDOP
 					}
 				}
 			}
-			if (wp.getPermLvl() < 1) {
-				if (!Money::createTrans(wp.getXuid(), 0, BUY_PRICE * point.size(), "buy land")) {
-					OERR("land.no.money");
-					return false;
-				}
-			}
+			if (!land_buy_next_step(wp, outp, point)) return false;
 			LOG("land buy step2", x, dx, z, dz);
 			LandImpl::addLand(x, dx, z, dz, dim, wp.getXuid());
 			LOG("buy land", x, z, dx, dz, dim);
@@ -575,7 +482,8 @@ static bool oncmd_2(CommandOrigin const& ori, CommandOutput& outp, MyEnum<LANDOP
 		if (op == LANDOP::info) {
 			outp.addMessage("landid " + S(fl->lid));
 			outp.addMessage("owners "+fl->ownStr());
-			outp.addMessage("perm " + S((u16)fl->perm));
+			outp.addMessage("perm_group " + S((u16)fl->perm_group)); //TODO:human readable perm
+			outp.addMessage("perm_others " + S((u16)fl->perm_others));
 			return true;
 		}
 		else {
@@ -585,12 +493,8 @@ static bool oncmd_2(CommandOrigin const& ori, CommandOutput& outp, MyEnum<LANDOP
 			}
 			//sell or gui
 			if (op == LANDOP::sell) {
-				size_t siz = fl->dz - fl->z + 1;
-				siz = siz * (fl->dx - fl->x + 1);
-				siz *= SELL_PRICE;
-				Money::createTrans(0, wp.getXuid(), money_t(siz), "sell land " + S(fl->lid));
+				land_sell_helper(wp, outp, fl);
 				LandImpl::removeLand(fl);
-				outp.addMessage("you get $" + S(siz) + " by selling this land");
 				return true;
 			}
 			else {
@@ -653,7 +557,10 @@ static bool oncmd_perm(CommandOrigin const& ori, CommandOutput& outp, MyEnum<LAN
 		return false;
 	}
 	DataLand dl(*fl);
-	dl.perm = (decltype(dl.perm))perm;
+	if(op.val==LANDOP_PERM::perm_o)
+		dl.perm_others = (decltype(dl.perm_others))perm;
+	else
+		dl.perm_group = (decltype(dl.perm_others))perm;
 	updLand(dl);
 	return true;
 }
@@ -691,15 +598,15 @@ static void TEST() {
 			//DBG_FLAG = 1;
 		}
 	printf("enter test\n");
-	for (int i = -100; i <= 100; ++i)
-		for (int j = -100; j <= 100; ++j) {
+	for (int i = -1000; i <= 100; ++i)
+		for (int j = -1000; j <= 100; ++j) {
 			LandImpl::addLand(i, i, j, j, ((u32)i*233+(u32)j)&3, i * 1000 + j);
 		}
 	printf("->1\n");
 	for (int i = -1000; i <= 1000; ++i)
 		for (int j = -1000; j <= 1000; ++j) {
 			auto fl = LandImpl::getFastLand(i, j, ((u32)i*233+(u32)j)&3);
-			LAssert((!fl && i >= -100 && i <= 100 && j >= -100 && j <= 100) || (fl && fl->owner[0] != i * 1000 + j),"test failed");
+			LAssert((!fl && i >= -1000 && i <= 100 && j >= -1000 && j <= 100) || (fl && fl->owner[0] != i * 1000 + j),"test failed");
 			fl = LandImpl::getFastLand(i, j, ((u32)i * 233 + (u32)j+1)&3);
 			LAssert(fl, "test2 failed");
 		}
@@ -711,7 +618,7 @@ static void TEST() {
 			//	LandImpl::getFastLand(i, j, 0);
 			//	LandImpl::getFastLand(i, j, 1);
 			//	LandImpl::getFastLand(i, j, 2);
-			for (int Z = 0; Z < 100; ++Z)
+			for (int Z = 0; Z < 1000; ++Z)
 				LandImpl::getFastLand((int)rdv(), (int)rdv(), rdv() & 3);
 			//}
 			if ((rdv() & 3) == 0) LandImpl::purge_cache();
@@ -724,7 +631,7 @@ static bool oncmd_dumpall(CommandOrigin const& ori, CommandOutput& outp) {
 	LandImpl::db->iter([&](string_view k, string_view v) {
 		if (k.size() == 4) {
 			FastLand* fl = (FastLand*)v.data();
-			outp.addMessage("land id " + S(fl->lid)+" perm "+S(fl->perm));
+			outp.addMessage("land id " + S(fl->lid)+" perm "+S(fl->perm_group)+" : "+S(fl->perm_others));
 			outp.addMessage("land pos (" + S(int(to_lpos(fl->x))) + " " + S(int(to_lpos(fl->z))) + ") -> (" + S(int(to_lpos(fl->dx))) + " " + S(int(to_lpos(fl->dz))) + ") dim " + S(fl->dim));
 			outp.addMessage("land owners " + fl->ownStr());
 			outp.addMessage("----------------------");
@@ -752,7 +659,8 @@ static void FIX_BUG_0401() {
 				}
 			}
 			else {
-				to_delete.emplace_back(k);
+				if(k!= "FIX_LAND_PERM_GROUP_0405")
+					to_delete.emplace_back(k);
 			}
 			return true;
 		});
@@ -772,17 +680,40 @@ void CHECK_MEMORY_LAYOUT() {
 	using LandImpl::__fail;
 	LAssert(sz != sizeof(FastLand) + sizeof(xuid_t), "MEM_LAYOUT_ERR");
 }
+void FIX_LAND_PERM_GROUP_0405() {
+	using LandImpl::db;
+	string val;
+	if (!db->get("FIX_LAND_PERM_GROUP_0405", val)) {
+		LOG("\n\nstart to fix FIX_LAND_PERM_GROUP_0405\n\n");
+		std::vector<pair<u32, string>> lands;
+		db->iter([&](string_view k, string_view v) {
+			if (k.size() == 4) {
+				string vv{ v };
+				FastLand* fl = (FastLand*)vv.data();
+				static_assert(offsetof(FastLand, perm_group) <= 36);
+				fl->perm_group = PERM_FULL;
+				lands.emplace_back(pair{ *(u32*)k.data(), std::move(vv) });
+			}
+			return true;
+		});
+		for (auto& [k, v] : lands) {
+			db->put(to_view(k), v);
+		}
+		db->put("FIX_LAND_PERM_GROUP_0405", "fixed");
+	}
+}
 void entry() {
 	LandImpl::INITDB();
 	CHECK_MEMORY_LAYOUT();
 	FIX_BUG_0401();
+	FIX_LAND_PERM_GROUP_0405();
 	//WaitForDebugger();
 	//TEST();
 	addListener([](RegisterCommandEvent&) {
 		CEnum<LANDPOP> _1("landpoint", {"a","b","exit"});
 		CEnum<LANDOP> _2("landop", {"buy","sell","info","gui"});
 		CEnum<LANDOP2> _3("landop2", { "trust","untrust","give"});
-		CEnum<LANDOP_PERM> _4("landperm", { "perm" });
+		CEnum<LANDOP_PERM> _4("landperm", { "permo","permg" });
 		MakeCommand("land", "land command", 0);
 		CmdOverload(land, oncmd,"point-op");
 		CmdOverload(land, oncmd_2, "land-op");
