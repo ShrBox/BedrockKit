@@ -1,1 +1,5 @@
-$(SolutionDir)\shared\headers\;$(SolutionDir)\shared;$(VC_IncludePath);$(WindowsSDK_IncludePath);
+$(SolutionDir)\third-party\include;$(SolutionDir)\shared\headers\;$(SolutionDir)\shared;$(VC_IncludePath);$(WindowsSDK_IncludePath);
+
+
+LIBPATH
+$(SolutionDir)\third-party\lib;$(VC_LibraryPath_x64);$(WindowsSDK_LibraryPath_x64)

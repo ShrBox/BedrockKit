@@ -41,5 +41,6 @@
   </ItemGroup>
   <ItemGroup>
     <Library Include="..\shared\LIGHTBASE.lib" />
+    <Library Include="..\third-party\lib\lua.lib" />
   </ItemGroup>
 </Project>

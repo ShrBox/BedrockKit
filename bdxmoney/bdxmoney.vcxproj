@@ -72,8 +72,9 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
-    <IncludePath>$(SolutionDir)\shared\headers\;$(SolutionDir)\shared;$(VC_IncludePath);$(WindowsSDK_IncludePath);</IncludePath>
+    <IncludePath>$(SolutionDir)\third-party\include;$(SolutionDir)\shared\headers\;$(SolutionDir)\shared;$(VC_IncludePath);$(WindowsSDK_IncludePath);</IncludePath>
     <GenerateManifest>false</GenerateManifest>
+    <LibraryPath>$(SolutionDir)\third-party\lib;$(VC_LibraryPath_x64);$(WindowsSDK_LibraryPath_x64)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LinkIncremental>true</LinkIncremental>
@@ -176,6 +177,8 @@
   <ItemGroup>
     <Library Include="..\shared\BDXLUA.lib" />
     <Library Include="..\shared\LIGHTBASE.lib" />
+    <Library Include="..\third-party\lib\sqlite3.lib" />
+    <Library Include="..\third-party\lib\SQLiteCpp.lib" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
