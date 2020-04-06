@@ -4,11 +4,13 @@
 // 任何项目上不应定义此符号。这样，源文件中包含此文件的任何其他项目都会将
 // BDXLUA_API 函数视为是从 DLL 导入的，而此 DLL 则将用此宏定义的
 // 符号视为是被导出的。
+#pragma once
 #ifdef BDXLUA_EXPORTS
 #define BDXLUA_API __declspec(dllexport)
 #else
 #define BDXLUA_API __declspec(dllimport)
 #endif
+
 #include<variant>
 #include<vector>
 #include<unordered_map>
@@ -39,9 +41,10 @@ struct ldata_ref_t {
 		return d.lv;
 	}
 };
-BDXLUA_API optional<ldata_t> call_lua(const char* name, static_queue<ldata_ref_t,8> const& arg);
+BDXLUA_API optional<long long> call_lua(const char* name, static_queue<ldata_ref_t,8> const& arg);
+extern BDXLUA_API struct lua_State* L;
+BDXLUA_API void registerLuaLoadHook(void(*)());
 #ifdef BDXLUA_EXPORTS
-extern lua_State* L;
 int lua_bind_GUI(lua_State* L);
 #endif
 

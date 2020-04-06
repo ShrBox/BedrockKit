@@ -201,6 +201,68 @@ bool oncmd_money_gui(CommandOrigin const& ori, CommandOutput& outp) {
 	}} });
 	return true;
 }
+int RealLua_getMoney(lua_State* L) {
+	try {
+		int n = lua_gettop(L);
+		if (n != 1) {
+			throw "getMoney(name)"s;
+		}
+		if (!lua_isstring(L, 1)) {
+			throw "getMoney(name)"s;
+		}
+		const char* name = lua_tostring(L, 1);
+		auto xid=XIDREG::str2id({ name }).val();
+		lua_pop(L, 1);
+		lua_pushnumber(L,Money::getMoney(xid));
+		return 1;
+	}
+	catch (string e) {
+		luaL_error(L, e.c_str());
+		return 0;
+	}
+}
+int RealLua_addMoney(lua_State* L) {
+	try {
+		int n = lua_gettop(L);
+		if (n != 2) {
+			throw "addMoney(name,int)"s;
+		}
+		if (!lua_isstring(L, 1) || !lua_isinteger(L,2)) {
+			throw "addMoney(name,int)"s;
+		}
+		const char* name = lua_tostring(L, 1);
+		auto xid = XIDREG::str2id({ name }).val();
+		auto money = lua_tointeger(L, 2);
+		lua_pop(L, 2);
+		Money::createTrans(0, xid, money, "lua");
+		return 0;
+	}
+	catch (string e) {
+		luaL_error(L, e.c_str());
+		return 0;
+	}
+}
+int RealLua_rdMoney(lua_State* L) {
+	try {
+		int n = lua_gettop(L);
+		if (n != 2) {
+			throw "rdMoney(name,int)"s;
+		}
+		if (!lua_isstring(L, 1) || !lua_isinteger(L, 2)) {
+			throw "rdMoney(name,int)"s;
+		}
+		const char* name = lua_tostring(L, 1);
+		auto xid = XIDREG::str2id({ name }).val();
+		auto money = lua_tointeger(L, 2);
+		lua_pop(L, 2);
+		lua_pushboolean(L,Money::reduceMoney(xid, money));
+		return 1;
+	}
+	catch (string e) {
+		luaL_error(L, e.c_str());
+		return 0;
+	}
+}
 void entry() {
 	if (!initDB()) {
 		exit(1);
@@ -230,4 +292,9 @@ void entry() {
 	bindings.emplace("getMoney", getMoney_lua);
 	bindings.emplace("rdMoney", rdMoney_lua);
 	bindings.emplace("addMoney", addMoney_lua);
+	registerLuaLoadHook([]() {
+		lua_register(L, "getMoney", RealLua_getMoney);
+		lua_register(L, "addMoney", RealLua_addMoney);
+		lua_register(L, "rdMoney", RealLua_rdMoney);
+	});
 }

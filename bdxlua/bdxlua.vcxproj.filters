@@ -21,6 +21,9 @@
     <ClInclude Include="pch.h">
       <Filter>头文件</Filter>
     </ClInclude>
+    <ClInclude Include="luaBindings.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="dllmain.cpp">
@@ -36,6 +39,21 @@
       <Filter>源文件</Filter>
     </ClCompile>
     <ClCompile Include="ishell.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="lbind.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="luaBaseAPI.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="luaDBApi.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="luaSchedulerApi.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="luaEventingApi.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>

@@ -17,5 +17,6 @@
 #include<stl/langPack.h>
 #include"bdxlua.h"
 #include<api/gui/gui.h>
+#include<lua.hpp>
 
 #endif //PCH_H

@@ -20,4 +20,6 @@
 #include<stl/KVDB.h>
 #include<mcapi/Level.h>
 #include<mcapi/Actor.h>
+
+#include<mcapi\Player.h>
 #endif //PCH_H

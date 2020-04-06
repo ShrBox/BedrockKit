@@ -63,6 +63,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="framework.h" />
+    <ClInclude Include="luaBindings.h" />
     <ClInclude Include="pch.h" />
   </ItemGroup>
   <ItemGroup>
@@ -70,6 +71,11 @@
     <ClCompile Include="dllmain.cpp" />
     <ClCompile Include="gui.cpp" />
     <ClCompile Include="ishell.cpp" />
+    <ClCompile Include="lbind.cpp" />
+    <ClCompile Include="luaBaseAPI.cpp" />
+    <ClCompile Include="luaDBApi.cpp" />
+    <ClCompile Include="luaEventingApi.cpp" />
+    <ClCompile Include="luaSchedulerApi.cpp" />
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
     </ClCompile>

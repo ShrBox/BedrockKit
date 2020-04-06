@@ -3,10 +3,14 @@
 
 #include "pch.h"
 #include "bdxlua.h"
+#include "luaBindings.h"
+static vector<void(*)()> onLuaReloaded;
+BDXLUA_API void registerLuaLoadHook(void(*x)()) {
+	onLuaReloaded.push_back(x);
+}
 lua_State* L;
 unique_ptr<KVDBImpl> db;
-BDXLUA_API unordered_map<string, luacb_t> bindings;
-BDXLUA_API optional<ldata_t> call_lua(const char* name, static_queue<ldata_ref_t,8> const& arg) {
+BDXLUA_API optional<long long> call_lua(const char* name, static_queue<ldata_ref_t,8> const& arg) {
 	lua_getglobal(L, "EXCEPTION");
 	auto EHIDX = lua_gettop(L);
 	if (lua_getglobal(L, name) == 0) {
@@ -34,13 +38,6 @@ BDXLUA_API optional<ldata_t> call_lua(const char* name, static_queue<ldata_ref_t
 	}
 	else {
 		try {
-			if (lua_isstring(L, -1)) {
-				string x;
-				fly.pop(x);
-				lua_settop(L, EHIDX - 1);
-				return { {std::move(x)} };
-			}
-			else {
 				if (lua_isinteger(L, -1)) {
 					long long x;
 					fly.pop(x);
@@ -51,214 +48,13 @@ BDXLUA_API optional<ldata_t> call_lua(const char* name, static_queue<ldata_ref_t
 					lua_settop(L, EHIDX - 1);
 					return { {0} };
 				}
-			}
 		}
 		catch (...) {
 			return {};
 		}
 	}
 }
-ldata_t _lpget(int i) {
-	if (lua_isinteger(L, i)) {
-		return { lua_tointeger(L,i) };
-	}
-	else {
-		if (lua_isstring(L, i)) {
-			size_t ssz;
-			auto str = lua_tolstring(L, i, &ssz);
-			return { string{str,ssz} };
-		}
-		else {
-			return { 0 };
-		}
-	}
-}
-int lua_call_bind_proxy(lua_State* L) {
-	auto n = lua_gettop(L);
-	if (n < 1) {
-		luaL_error(L, "lbind needs len(args)>=1,use lbind(\"name\",...)");
-		return 0;
-	}
-	if (!lua_isstring(L, 1)) {
-		lua_settop(L, 0);
-		luaL_error(L, "use lbind(\"name\",...)");
-		return 0;
-	}
-	auto str = lua_tostring(L, 1);
-	auto it = bindings.find(str);
-	if (it == bindings.end()) {
-		lua_settop(L, 0);
-		luaL_error(L, "binding %s not found!", str);
-		return 0;
-	}
-	vector<ldata_t> arg;
-	for (int i = 2; i <= n; ++i) {
-		auto data = _lpget(i);
-		arg.emplace_back(std::move(data));
-	}
-	lua_settop(L, 0);
-	try {
-		auto suc = it->second(arg);
-			if (suc.index() == 0) {
-				//int
-				lua_pushinteger(L, std::get<0>(suc));
-			}
-			else {
-				lua_pushlstring(L, std::get<1>(suc).data(), std::get<1>(suc).size());
-			}
-		return 1;
-	}
-	catch (string e) {
-		luaL_error(L, "lbind error in %s : %s",str,e.c_str());
-		return 0;
-	}
-	return 0;
-}
-int lb_sendText(lua_State* L) {
-	//name text [type]
-	auto n = lua_gettop(L);
-	if (n < 2) {
-		luaL_error(L, "sendText: need at least 2 args");
-		return 0;
-	}
-	TextType tp{ RAW };
-	if (n == 3) {
-		tp = (TextType)lua_tointeger(L, 3);
-	}
-	size_t namel, textl;
-	auto _n=lua_tolstring(L, 1, &namel);
-	auto _t=lua_tolstring(L, 2, &textl);
-	string_view name(_n, namel);
-	string_view text(_t, textl);
-	auto sp = LocateS<WLevel>()->getPlayer(name);
-	if (!sp.Set()) {
-		luaL_error(L, "sendText: player not online");
-		return 0;
-	}
-	sp.value().sendText(text, tp);
-	lua_pop(L, n);
-	return 0;
-}
-int lb_runcmd(lua_State* L) {
-	auto n = lua_gettop(L);
-	if (n < 1) {
-		luaL_error(L,"runcmd(cmd)");
-		return 0;
-	}
-	size_t s1;
-	auto _n = lua_tolstring(L, 1, &s1);
-	string_view cmd(_n, s1);
-	auto rv = BDX::runcmd(string{ cmd });
-	lua_pop(L, n);
-	lua_pushboolean(L, rv);
-	return 1;
-}
-int lb_runcmdAs(lua_State* L) {
-	auto n = lua_gettop(L);
-	if (n < 2) {
-		luaL_error(L, "runcmdAs(name,cmd)");
-		return 0;
-	}
-	size_t s1;
-	auto _n = lua_tolstring(L, 2, &s1);
-	string cmd(_n, s1);
-	size_t s2;
-	auto _n2 = lua_tolstring(L, 1, &s2);
-	string name(_n2, s2);
-	lua_pop(L, n);
-	auto ply = LocateS<WLevel>()->getPlayer(name);
-	if (ply.Set()) {
-		lua_pushboolean(L, ply.value().runcmd(cmd));
-	}
-	else {
-		lua_pushboolean(L, false);
-	}
-	return 1;
-}
-int lb_oListV(lua_State* L) {
-	lua_settop(L, 0);
-	auto& s = GUI::getPlayerListView();
-	lua_pushlstring(L, s.data(),s.size());
-	return 1;
-}
-int lb_oList(lua_State* L) {
-	lua_settop(L, 0);
-	auto ps = LocateS<WLevel>()->getUsers();
-	lua_checkstack(L, ps.size()+20);
-	lua_newtable(L);
-	int idx = 0;
-	for (auto i : ps) {
-		lua_pushstring(L, i.getName().c_str());
-		lua_rawseti(L, -2, ++idx);
-	}
-	return 1;
-}
-int lb_dbget(lua_State* L) {
-	try {
-		LuaFly fly{ L };
-		string rv;
-		string mainkey;
-		xstring key;
-		fly.pops(key,mainkey);
-		auto has=db->get(mainkey + "-" + key, rv);
-		if(has)
-			fly.push(rv);
-		else
-			lua_pushnil(L);
-		return 1;
-	}
-	catch (string e) {
-		luaL_error(L, e.c_str());
-		return 0;
-	}
-}
-int lb_bctext(lua_State* L) {
-	//broadcast text
-	try {
-		LuaFly fly{ L };
-		xstring cont;
-		fly.pops(cont);
-		TextType tp{ RAW };
-		if (lua_gettop(L)) {
-			fly.pops(*(int*)&tp);
-		}
-		LocateS<WLevel>()->broadcastText(cont,tp);
-		return 0;
-	}
-	catch (string e) {
-		luaL_error(L, e.c_str());
-		return 0;
-	}
-}
-int lb_dbput(lua_State* L) {
-	try {
-	LuaFly fly{ L };
-	string mainkey;
-	xstring key;
-	xstring cont;
-	fly.pops(cont, key, mainkey);
-	db->put(mainkey + "-" + key, cont);
-	return 0;
-}
-catch (string e) {
-	luaL_error(L, e.c_str());
-	return 0;
-}
-}
-int lb_dbdel(lua_State* L) {
-	try {
-	LuaFly fly{ L };
-	string mainkey;
-	xstring key;
-	fly.pops(key, mainkey);
-	db->del(mainkey + "-" + key);
-	return 0;
-}
-catch (string e) {
-	luaL_error(L, e.c_str());
-	return 0;
-}
-}
+
 void reg_all_bindings() {
 	lua_register(L, "lbind", lua_call_bind_proxy);
 	lua_register(L, "L", lua_call_bind_proxy);
@@ -272,6 +68,14 @@ void reg_all_bindings() {
 	lua_register(L, "dget", lb_dbget);
 	lua_register(L, "ddel", lb_dbdel);
 	lua_register(L, "dput", lb_dbput);
+	lua_register(L, "schedule", lb_schedule);
+	lua_register(L, "cancel", lb_sch_cancel);
+	lua_register(L, "getPos", lb_getpos);
+	lua_register(L, "Listen", lb_regEventL);
+	lua_register(L, "Unlisten", lb_unregEventL);
+	for (auto i : onLuaReloaded) {
+		i();
+	}
 }
 bool dofile_lua(string const& name) {
 	std::ifstream ifs(name);
@@ -304,6 +108,7 @@ string wstr2str(std::wstring const& str) {
 bool loadlua() {
 	if (L) {
 		lua_close(L);
+		lua_scheduler_reload();
 	}
 	L = luaL_newstate();
 	luaL_openlibs(L);
@@ -356,7 +161,13 @@ bool oncmd_gui(CommandOrigin const& ori, CommandOutput& outp,string& v) {
 }
 bool oncmd_luacmd(CommandOrigin const& ori, CommandOutput& outp, CommandMessage& m) {
 	string msg=m.get(ori);
-	return call_lua("onLCMD", { &ori.getName(),&msg }).set;
+	auto pos = msg.find(' ');
+	string PRE = msg.substr(0, pos);
+	string NEX;
+	if (pos != PRE.npos)
+		NEX = msg.substr(pos + 1);
+	CallEvent("onLCMD", { &ori.getName(),&PRE,&NEX });
+	return true;
 }
 bool oncmd_dumpdb(CommandOrigin const& ori, CommandOutput& outp,string& target) {
 	bool flag = false;
@@ -378,7 +189,6 @@ void entry() {
 	using namespace std::filesystem;
 	db = MakeKVDB(GetDataPath("lua"),true,2);
 	create_directory("gui");
-	loadlua();
 	addListener([](RegisterCommandEvent&) {
 		MakeCommand("lcall", "call lua fn", 0);
 		CmdOverload(lcall, oncmd_lua, "func name");
@@ -393,21 +203,19 @@ void entry() {
 	});
 	addListener([](PlayerJoinEvent& ev) {
 		auto& name = ev.getPlayer().getName();
-		call_lua("onJoin", { &name });
+		CallEvent("onJoin", { &name });
 	});
 	addListener([](PlayerLeftEvent& ev) {
 		auto& name = ev.getPlayer().getName();
-		call_lua("onLeft", { &name });
+		CallEvent("onLeft", { &name });
 		});
 	addListener([](PlayerChatEvent& ev) {
 		auto& name = ev.getPlayer().getName();
-		auto data=call_lua("onChat", { &name,&ev.getChat() });
-		if (data.Set() && std::get<0>(data.value()) == -1) ev.setCancelled();
+		if (!CallEvent("onChat", { &name,&ev.getChat() })) ev.setCancelled();
 	});
 	addListener([](PlayerCMDEvent& ev) {
 		auto& name = ev.getPlayer().getName();
-		auto data = call_lua("onCMD", { &name,&ev.getCMD() });
-		if (data.Set() && std::get<0>(data.value()) == -1) ev.setCancelled();
+		if (!CallEvent("onCMD", { &name,&ev.getCMD() })) ev.setCancelled();
 	});
 	addListener([](MobDeathEvent& ev) {
 		auto& src=ev.getSource();
@@ -417,7 +225,8 @@ void entry() {
 			ServerPlayer* sp=MakeSP(ac);
 			if (!sp) return;
 			WPlayer wp{ *sp };
-			call_lua("onPlayerKillMob", { &wp.getName(),ev.getMob()->getEntityTypeId() });
+			CallEvent("onPlayerKillMob", { &wp.getName(),ev.getMob()->getEntityTypeId() });
 		}
 	});
+	addListener([](ServerStartedEvent&) {loadlua();});
 }

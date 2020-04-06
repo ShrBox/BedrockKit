@@ -5,6 +5,7 @@ bool checkLandRange_stub(IVec2 vc, IVec2 vc2, int dim) {
 	static bool inited = false;
 	static decltype(&checkLandRange) ptr=nullptr;
 	if (!inited) {
+		inited = true;
 		auto handle = LoadLibraryA("bdxland.dll");
 		if (handle) {
 			ptr = (decltype(ptr))GetProcAddress(handle, "checkLandRange");

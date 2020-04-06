@@ -2,11 +2,12 @@
 struct WPlayer;
 #include<string>
 #include<stl\useful.h>
+class NetworkIdentifier;
 namespace BDX {
 	using std::string;
 	LBAPI bool runcmd(const string& cmd);
 	LBAPI bool runcmdAs(WPlayer, const string& cmd);
-	LBAPI string getIP(class NetworkIdentifier&);
+	LBAPI string getIP(NetworkIdentifier&);
 	template<typename T>
 	static inline void APPEND(string& r,T&& x) {
 		r.append(S(std::forward<T>(x)));

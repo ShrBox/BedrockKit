@@ -30,13 +30,19 @@ public:
 	}
 	ICancellableEvent() :cancelled(false) {}
 };
+#include<stl\CBStorage.h>
 template<class T>
 struct CallBackStorage {
-	function<void(T&)> data;
+	CBStorage<T> data;
 	LInfo<T> id;
 #ifdef TRACING_ENABLED
 	string note;
 #endif
+	#ifdef TRACING_ENABLED
+		#define CBINFO ,string&& note_
+	#else
+		#define CBINFO 
+	#endif
 	operator bool() {
 		return id.id!=-1;
 	}
@@ -46,13 +52,13 @@ struct CallBackStorage {
 	CallBackStorage() {
 		id.id = -1;
 	}
-#ifdef TRACING_ENABLED
-	CallBackStorage(function<void(T&)>&& fun, LInfo<T> lf,string&& note_) :data(std::forward< function<void(T&)>>(fun)), id(lf),note(std::forward<string>(note_)) {
+	CallBackStorage(CBStorage<T>&& fun, LInfo<T> lf CBINFO) : data(std ::move(fun)),
+															  id(lf)
+	{
+		#ifdef TRACING_ENABLED
+		note = std::move(note_);
+		#endif
 	}
-#else
-	CallBackStorage(function<void(T&)>&& fun,LInfo<T> lf):data(std::forward< function<void(T&)>>(fun)),id(lf) {
-	}
-#endif
 };
 #ifdef LIGHTBASE_EXPORTS
 static inline void logError(const char* e,const char* T) {
@@ -68,16 +74,14 @@ static inline void logError(const char* e, const char* T) {
 #include<debug/WatchDog.h>
 template <class T>
 class EventCaller {
-	LIGHTBASE_API static std::list<CallBackStorage<T>> listener;
+	LIGHTBASE_API static std::list<CallBackStorage<T>> listener_v2;
 public:
 	template<typename... P>
 	static auto _call(P&&... args) {
-		//printf("call event %s\n", typeid(T).name());
-		
 		T ev(std::forward<P>(args)...);
 		try {
-			for (auto& i : EventCaller<T>::listener) {
-				if (i.id.id == -1)
+			for (auto& i : EventCaller<T>::listener_v2) {
+				if (!i)
 					continue;
 				WATCH_ME(string("call event ") + typeid(T).name() + "\n at " + i.note);
 					i(ev);
@@ -99,24 +103,24 @@ public:
 			return;
 	}
 	static void _removeall() {
-		listener.clear();
+		listener_v2.clear();
 	}
 	template<typename... TP>
-	static LInfo<T> _reg(function<void(T&)>&& cb, EvPrio prio,TP&&... args) {
+	static LInfo<T> _reg(CBStorage<T>&& cb, EvPrio prio,TP&&... args) {
 		LInfo<T> lf;
 		lf.id = newListenerID();
 		if (prio == EvPrio::HIGH) {
-			listener.emplace_front(std::forward< function<void(T&)>>(cb),lf,std::forward<TP>(args)...);
+			listener_v2.emplace_front(std::move(cb), lf, std::forward<TP>(args)...);
 			return lf;
 		}
 		if (prio == EvPrio::LOW) {
-			listener.emplace_back(std::forward< function<void(T&)>>(cb), lf, std::forward<TP>(args)...);
+			listener_v2.emplace_back(std::move(cb), lf, std::forward<TP>(args)...);
 			return lf;
 		}
-		for (auto it = listener.begin(); it != listener.end(); ++it) {
+		for (auto it = listener_v2.begin(); it != listener_v2.end(); ++it) {
 			if (!(*it)) {
 				//flag
-				listener.emplace(it, std::forward<function<void(T&)>>(cb), lf, std::forward<TP>(args)...);
+				listener_v2.emplace(it, std::move(cb), lf, std::forward<TP>(args)...);
 				return lf;
 			}
 		}
@@ -124,10 +128,10 @@ public:
 		return { -1 };
 	}
 	static auto _remove(LInfo<T> lf) {
-		return listener.remove_if([lf](auto& elem)->bool {return elem.id.id == lf.id; });
+		return listener_v2.remove_if([lf](auto& elem) -> bool { return elem.id.id == lf.id; });
 	}
 	static void _cleanup() {
-		listener.remove_if([](auto& elem)->bool {return !elem; });
+		listener_v2.remove_if([](auto& elem) -> bool { return !elem; });
 	}
 };
 
@@ -201,33 +205,27 @@ template<class T>
 void removeListener(LInfo<T> lf) {
 	T::_remove(lf);
 }
-#ifdef TRACING_ENABLED
-template<class T>
-LInfo<T> __addListener(string&& note,function<void(T&)>&& fn, EvPrio prio = EvPrio::MEDUIM) {
-	return T::_reg(std::forward<function<void(T&)>>(fn), prio,std::forward<string>(note));
-}
-template<typename T>
-auto __addListener(string&& note,T&& fn, EvPrio prio = EvPrio::MEDUIM) {
-	return __addListener(std::forward<string>(note),function(std::forward<T>(fn)), prio);
-}
+
 struct addListener_caller {
+	#ifdef TRACING_ENABLED
 	string note;
+	#endif
 	addListener_caller(string&& n) {
+		#ifdef TRACING_ENABLED
 		note = std::forward<string>(n);
+		#endif
 	}
-	template<typename... T>
-	auto operator()(T&&... a) {
-		return __addListener(std::move(note), std::forward<T>(a)...);
+	template<typename T>
+	auto realAddListener(CBStorage<T>&& cb, EvPrio prio) {
+	#ifdef TRACING_ENABLED
+		return T::_reg(std::move(cb), prio, std::move(note));
+	#else
+		return T::_reg(std::move(cb), prio);
+	#endif
+	}
+	template<typename T>
+	auto operator()(T&& cb,EvPrio prio=EvPrio::MEDUIM) {
+		return realAddListener(MakeCB(cb), prio);
 	}
 };
 #define addListener addListener_caller(std::to_string(__LINE__)+" :: "+__FILE__)
-#else
-template<class T>
-LInfo<T> addListener(function<void(T&)>&& fn, EvPrio prio = EvPrio::MEDUIM) {
-	return T::_reg(std::forward<function<void(T&)>>(fn), prio);
-}
-template<typename T>
-LInfo<T> addListener(T&& fn, EvPrio prio = EvPrio::MEDUIM) {
-	return addListener(function(std::forward<T>(fn)), prio);
-}
-#endif
