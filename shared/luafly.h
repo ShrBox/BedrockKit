@@ -69,6 +69,10 @@ struct LuaFly {
     void push(T&& x) {
         lua_pushnumber(L, x);
     }
+    template<typename... T>
+    void pushs(T&&... a) {
+        (push(std::forward<T>(a)), ...);
+    }
     void readx(xstring& x,int pos=-1) {
         if (lua_gettop(L) == 0) throw "stack overflow"s;
         switch (lua_type(L, pos)) {

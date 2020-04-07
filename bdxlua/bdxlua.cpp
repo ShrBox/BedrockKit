@@ -65,6 +65,7 @@ void reg_all_bindings() {
 	lua_register(L, "oList", lb_oList);
 	lua_register(L, "oListV", lb_oListV);
 	lua_register(L, "GUI", lua_bind_GUI);
+	lua_register(L, "GUIR", lua_bind_GUI_Raw);
 	lua_register(L, "dget", lb_dbget);
 	lua_register(L, "ddel", lb_dbdel);
 	lua_register(L, "dput", lb_dbput);
@@ -152,7 +153,7 @@ bool oncmd_reloadlua(CommandOrigin const& ori, CommandOutput& outp) {
 }
 #include<filesystem>
 void glang_send(WPlayer wp, const string& payload);
-string getForm(const string& name);
+string getForm(string_view name);
 bool oncmd_gui(CommandOrigin const& ori, CommandOutput& outp,string& v) {
 	auto wp = MakeWP(ori);
 	if (v.find('.') != v.npos || v.find('/') != v.npos || v.find('\\') != v.npos) return false;

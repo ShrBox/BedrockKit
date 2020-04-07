@@ -421,19 +421,6 @@ BDXLAND_API bool checkLandOwnerRange(IVec2 vc, IVec2 vc2, int dim, unsigned long
 static inline FastLand const* genericPerm(BlockPos const& pos, WPlayer wp, LandPerm pm=LandPerm::NOTHING) {	
 	return genericPerm(pos.x, pos.z, wp, pm);
 }
-static void LandGUIFor(WPlayer wp) {
-	using namespace GUI;
-	shared_ptr<FullForm> sf = make_shared<FullForm>();
-	sf->title = "LAND GUI";
-	sf->addWidget(GUIDropdown(string(I18N::S_OPERATION), { "give","trust" }));
-	sf->addWidget(GUIDropdown(string(I18N::S_TARGET), getPlayerList()));
-	sendForm(wp, FullFormBinder(sf, [](WPlayer w, FullFormBinder::DType d) {
-		if (d.set) {
-			auto [val, data] = d.val();
-			w.runcmdA("land", data[0], QUOTE(data[1]));
-		}
-	}));
-}
 static bool oncmd_2(CommandOrigin const& ori, CommandOutput& outp, MyEnum<LANDOP> op) {
 	auto sp = MakeSP(ori);
 	if (!sp) return false;
@@ -497,11 +484,6 @@ static bool oncmd_2(CommandOrigin const& ori, CommandOutput& outp, MyEnum<LANDOP
 				LandImpl::removeLand(fl);
 				return true;
 			}
-			else {
-				//GUI
-				LandGUIFor(wp);
-				return true;
-			}
 		}
 	}
 		break;
@@ -534,10 +516,16 @@ static bool oncmd_3(CommandOrigin const& ori, CommandOutput& outp, MyEnum<LANDOP
 		}
 		break;
 		case LANDOP2::untrust: {
+			if (dl.owner.size() == sizeof(xuid_t)) {
+				return false;
+			}
 			dl.delOwner(tar.val());
 		}
 		break;
 		case LANDOP2::give: {
+			if (dl.owner.size() == 0) {
+				return false;
+			}
 			memcpy(dl.owner.data(), &tar.val(), sizeof(xuid_t));
 		}
 		break;
@@ -702,7 +690,42 @@ void FIX_LAND_PERM_GROUP_0405() {
 		db->put("FIX_LAND_PERM_GROUP_0405", "fixed");
 	}
 }
+#include<bdxlua.h>
+#include<lua.hpp>
+#include<luafly.h>
+int lb_getLand(lua_State* L) {
+	try {
+		//x y z dim
+		double x, y, z;
+		int dim;
+		LuaFly lf{ L };
+		lf.pops(dim, z, y, x);
+		int xx = iround((float)x), zz = iround((float)z);
+		auto fl=getFastLand(xx, zz, dim);
+		if (!fl) {
+			lua_pushnil(L);
+			return 1;
+		}
+		int permo = fl->perm_others;
+		int permg = fl->perm_group;
+		vector<string> owners;
+		for (u32 i = 0; i < fl->owner_sz; ++i) {
+			optional<string> own = XIDREG::id2str(fl->owner[i]);
+			if (own.set) {
+				owners.emplace_back(std::move(own.val()));
+			}
+		}
+		lf.pushs(permo, permg, owners);
+		return 3;
+	}CATCH()
+}
+void InitLUA() {
+	registerLuaLoadHook([]() {
+		lua_register(L, "getLand", lb_getLand);
+	});
+}
 void entry() {
+	InitLUA();
 	LandImpl::INITDB();
 	CHECK_MEMORY_LAYOUT();
 	FIX_BUG_0401();
@@ -711,7 +734,7 @@ void entry() {
 	//TEST();
 	addListener([](RegisterCommandEvent&) {
 		CEnum<LANDPOP> _1("landpoint", {"a","b","exit"});
-		CEnum<LANDOP> _2("landop", {"buy","sell","info","gui"});
+		CEnum<LANDOP> _2("landop", {"buy","sell","info"});
 		CEnum<LANDOP2> _3("landop2", { "trust","untrust","give"});
 		CEnum<LANDOP_PERM> _4("landperm", { "permo","permg" });
 		MakeCommand("land", "land command", 0);
@@ -766,7 +789,7 @@ void entry() {
 		}
 		ev.setAborted();
 		ev.setCancelled();
-	}, EvPrio::HIGH);
+	}, EvPrio::MEDUIM);
 	addListener([](PlayerUseItemOnEntityEvent& ev) {
 		if (!ev.victim) return; //maybe player hit a npc?
 		IVec2 vc(ev.victim->getPos());

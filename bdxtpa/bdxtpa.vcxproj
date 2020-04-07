@@ -161,12 +161,15 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="framework.h" />
+    <ClInclude Include="homeStorage.h" />
     <ClInclude Include="pch.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="BDXTPA.cpp" />
     <ClCompile Include="dllmain.cpp" />
+    <ClCompile Include="homeStorage.cpp" />
     <ClCompile Include="landAPI_stub.cpp" />
+    <ClCompile Include="luaAPI.cpp" />
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
@@ -175,6 +178,7 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
+    <Library Include="..\shared\BDXLUA.lib" />
     <Library Include="..\shared\LIGHTBASE.lib" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

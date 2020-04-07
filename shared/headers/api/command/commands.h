@@ -124,7 +124,7 @@ namespace CMDREG {
 			}
 			sub() {}
 		};
-		static std::function<void(container&)> new_cb;
+		static void(*new_cb)(container&) ;
 		template <typename TX>
 		inline void reg_impl_sub(uintptr_t off, string const& desc, std::vector<CommandParameterData>& vc) {
 			off += offsetof(sub, data);
@@ -180,14 +180,15 @@ namespace CMDREG {
 		}
 		static std::unique_ptr<Command> factory() {
 			auto rv = std::make_unique<sub>();
-			new_cb(rv->data);
+			if(new_cb)
+				new_cb(rv->data);
 			return rv;
 		}
 	};
 	template <typename Dummy, typename... TP>
 	uintptr_t MakeOverload<Dummy, TP...>::sub::cb;
 	template <typename Dummy, typename... TP>
-	std::function<void(std::tuple<std::remove_cv_t<std::remove_reference_t <TP>>...>&)> MakeOverload<Dummy, TP...>::new_cb = [](auto&) {};
+	void(*MakeOverload<Dummy, TP...>::new_cb)(std::tuple<std::remove_cv_t<std::remove_reference_t <TP>>...>&) = nullptr;
 };
 using CMDREG::CEnum, CMDREG::MakeCommand, CMDREG::MakeOverload, CMDREG::MyEnum;
 static_assert(sizeof(MakeOverload<void,int>) ==1);

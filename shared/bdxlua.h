@@ -48,4 +48,17 @@ BDXLUA_API void registerLuaLoadHook(void(*)());
 int lua_bind_GUI(lua_State* L);
 #endif
 
+#define CATCH() catch (string e) { \
+		luaL_error(L, e.c_str()); \
+		return 0; \
+	} \
+	catch (std::exception e) { \
+		luaL_error(L, e.what()); \
+		return 0; \
+	} \
+	catch (...) { \
+		luaL_error(L, "internal error"); \
+		return 0; \
+	}
+
 

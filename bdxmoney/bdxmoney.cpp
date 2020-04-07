@@ -213,13 +213,10 @@ int RealLua_getMoney(lua_State* L) {
 		const char* name = lua_tostring(L, 1);
 		auto xid=XIDREG::str2id({ name }).val();
 		lua_pop(L, 1);
-		lua_pushnumber(L,Money::getMoney(xid));
+		lua_pushinteger(L,Money::getMoney(xid));
 		return 1;
 	}
-	catch (string e) {
-		luaL_error(L, e.c_str());
-		return 0;
-	}
+	CATCH()
 }
 int RealLua_addMoney(lua_State* L) {
 	try {
@@ -237,10 +234,7 @@ int RealLua_addMoney(lua_State* L) {
 		Money::createTrans(0, xid, money, "lua");
 		return 0;
 	}
-	catch (string e) {
-		luaL_error(L, e.c_str());
-		return 0;
-	}
+	CATCH()
 }
 int RealLua_rdMoney(lua_State* L) {
 	try {
@@ -258,10 +252,7 @@ int RealLua_rdMoney(lua_State* L) {
 		lua_pushboolean(L,Money::reduceMoney(xid, money));
 		return 1;
 	}
-	catch (string e) {
-		luaL_error(L, e.c_str());
-		return 0;
-	}
+	CATCH()
 }
 void entry() {
 	if (!initDB()) {

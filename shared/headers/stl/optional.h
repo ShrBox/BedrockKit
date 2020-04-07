@@ -57,6 +57,11 @@ struct optional : Ioptional {
 		}
 		return *this;
 	}
+	~optional() {
+		if (set) {
+			value().~T();
+		}
+	}
 	template<typename Callable>
 	void then(Callable const& x) {
 		if (set)

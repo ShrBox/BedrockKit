@@ -187,8 +187,9 @@ string ProcessLabel(string_view x) {
     return rv;
 }
 #include<filesystem>
-string getForm(const string& name) {
-    auto path = "gui/" + name;
+string getForm(string_view name) {
+    auto path = "gui/"s;
+    path.append(name);
     if (!std::filesystem::exists(path)) throw "File not exists"s;
     std::ifstream ifs(path);
     return ifs2str(ifs);
@@ -366,30 +367,29 @@ void glang_send(WPlayer wp,const string& payload) {
         }
     }
 }
-int lua_bind_GUI(lua_State* L) {
+string lua_popStr(lua_State* L,int n) {
+    size_t Lstr;
+    const char* pStr = luaL_tolstring(L, n, &Lstr);
+    return { pStr,Lstr };
+}
+string_view lua_popStrV(lua_State* L, int n) {
+    size_t Lstr;
+    const char* pStr = luaL_tolstring(L, n, &Lstr);
+    return { pStr,Lstr };
+}
+int lua_bind_GUI_impl(lua_State* L,string_view sv) {
     //string(pname) string(filename) args...
     auto n = lua_gettop(L);
     if (n < 2) {
         luaL_error(L, "too less args");
         return 0;
     }
-    size_t Lpname, Lfile;
-    auto ppname=luaL_tolstring(L, 1, &Lpname);
-    auto pfile=luaL_tolstring(L, 2, &Lfile);
-    auto p=LocateS<WLevel>()->getPlayer({ ppname,Lpname });
+    auto p=LocateS<WLevel>()->getPlayer(lua_popStrV(L,1));
     if (!p.set) {
         luaL_error(L, "player offline");
         return 0;
     }
     auto wp=p.val();
-    string sv;
-    try {
-        sv = getForm({ pfile,Lfile });
-    }
-    catch (...) {
-        luaL_error(L, "cant find form");
-        return 0;
-    } //step 1 load form
     vector<string> X;
     try {
         LuaFly fly{ L };
@@ -398,22 +398,34 @@ int lua_bind_GUI(lua_State* L) {
             fly.readx(x, i);
             X.emplace_back(std::move(x));
         } //step 2 lua->vector
-    }
-    catch (string e) {
-        luaL_error(L, e.c_str());
-        return 0;
-    }
-    lua_settop(L, 0);
-    try {
+        lua_settop(L, 0);
          auto compiled=LEX::Compile(sv, X);
          glang_send(wp, compiled);
     }
-    catch (string e) {
-        luaL_error(L, e.c_str());
+    CATCH()
+    return 0;
+}
+int lua_bind_GUI(lua_State* L) {
+    auto n = lua_gettop(L);
+    if (n < 2) {
+        luaL_error(L, "too less args");
         return 0;
+    }
+    try {
+        string sv = getForm(lua_popStrV(L, 2));
+        return lua_bind_GUI_impl(L, sv);
     }
     catch (...) {
+        luaL_error(L, "cant find form");
+        return 0;
+    } //step 1 load form
+    return 0;
+}
+int lua_bind_GUI_Raw(lua_State* L) {
+    auto n = lua_gettop(L);
+    if (n < 2) {
+        luaL_error(L, "too less args");
         return 0;
     }
-    return 0;
+    return lua_bind_GUI_impl(L, lua_popStrV(L,2));
 }

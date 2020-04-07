@@ -92,10 +92,7 @@ int lb_bctext(lua_State* L) {
 		LocateS<WLevel>()->broadcastText(cont, tp);
 		return 0;
 	}
-	catch (string e) {
-		luaL_error(L, e.c_str());
-		return 0;
-	}
+	CATCH()
 }
 int lb_getpos(lua_State* L) {
 	try {
@@ -110,12 +107,5 @@ int lb_getpos(lua_State* L) {
 		lua_pushinteger(L, wp.getDimID());
 		return 4;
 	}
-	catch (string e) {
-		luaL_error(L, e.c_str());
-		return 0;
-	}
-catch(...){
-		luaL_error(L, "not online");
-		return 0;
-}
+	CATCH()
 }

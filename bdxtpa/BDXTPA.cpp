@@ -3,13 +3,10 @@
 
 #include "pch.h"
 #include <bdxland.h>
-static std::unique_ptr<KVDBImpl> db;
+#include "homeStorage.h"
+std::unique_ptr<KVDBImpl> db;
 static Logger LOG(stdio_commit{"[TPA] "});
-//#define CSUCC outp.success("done")
-#define CSUCC 
 bool checkLandOwnerRange_stub(IVec2 vc, IVec2 vc2, int dim, unsigned long long xuid);
-
-
 #pragma region structs
 enum direction :int {
 	A_B = 1,
@@ -27,87 +24,7 @@ struct TPASet {
 	bool Accept=true;
 };
 
-struct Vec4 {
-	Vec3 vc;
-	char dimid;
-	string toStr()const{
-		return "(" + std::to_string(vc.x) + " , " + std::to_string(vc.y) + " , " + std::to_string(vc.z) + " , " + std::to_string(dimid) + " , " + ")";
-	}
-	template<typename _TP>
-	void pack(WBStreamImpl<_TP>& ws) const {
-		ws.apply(vc, dimid);
-	}
-	void unpack(RBStream& rs) {
-		rs.apply(vc, dimid);
-	}
-	void teleport(WPlayer wp) {
-		wp.teleport(vc, dimid);
-	}
-	Vec4(WActor wp) {
-		vc = wp->getPos();
-		vc.y -= 1.5;
-		dimid = wp.getDimID();
-	}
-	Vec4(WPlayer wp) {
-		vc = wp->getPos();
-		vc.y -= 1.5;
-		dimid = wp.getDimID();
-	}
-	Vec4(Vec3 x, int dim) :vc(x), dimid(dim) {}
-	Vec4() {}
-};
-struct Homes {
-	struct Home {
-		Vec4 pos;
-		string name;
-		Home(){}
-		Home(string const& b,WActor ac) :name(b),pos(ac) {
-		}
-		Home(string const& b, Vec4 const& ac) :name(b), pos(ac) {
-		}
-		template<typename _TP>
-		void pack(WBStreamImpl<_TP>& ws) const {
-			ws.apply(pos, name);
-		}
-		void unpack(RBStream& rs) {
-			rs.apply(pos, name);
-		}
-	};
-	xuid_t owner=0;
-	std::list<Home> data;
-	Homes(xuid_t xid) {
-		string val;
-		if (db->get(to_view(xid), val)) {
-			RBStream rs{ val };
-			rs.apply(data);
-		}
-		owner = xid;
-	}
-	Homes(string_view own){
-		string val;
-		auto x = XIDREG::str2id(own);
-		if (x.Set()) {
-			if (db->get(to_view(x.val()), val)) {
-				RBStream rs{ val };
-				rs.apply(data);
-			}
-			owner = x.val();
-		}
-	}
-	template<typename _TP>
-	void pack(WBStreamImpl<_TP>& ws) const {
-		ws.apply(data);
-	}
-	void unpack(RBStream& rs) {
-		rs.apply(data);
-	}
-	void save() {
-		WBStream ws;
-		ws.apply(*this);
-		if(owner)
-			db->put(to_view(owner), ws);
-	}
-};
+
 #pragma endregion
 #pragma region gvals
 static LangPack LP("langpack/tpa.json");
@@ -230,26 +147,6 @@ void sendWARPGUI(WPlayer wp) {
 		}
 	}));
 }
-void sendHOMEGUI(WPlayer wp) {
-	Homes hm{ wp.getXuid() };
-	using namespace GUI;
-	auto fm = make_shared<FullForm>();
-	fm->title = "Home System";
-	fm->addWidget({ GUIDropdown(string(I18N::S_OPERATION),{"go","del"}) });
-	vector<string> homes;
-	for (auto& i : hm.data) {
-		homes.emplace_back(i.name);
-	}
-	fm->addWidget({ GUIDropdown("home",std::move(homes)) });
-	sendForm(wp, FullFormBinder(fm, [](WPlayer wp, FullFormBinder::DType d) {
-		LOG("cb");
-		if (d.set) {
-			auto [rawres, res] = d.val();
-			int op = std::get<int>(rawres[0]);
-			wp.runcmdA("home",(op ? "del" : "go"),QUOTE(res[1]));
-		}
-	}));
-}
 void schTask() {
 	Handler::schedule(RepeatingTask([] {
 		clock_t expire = clock() - TPexpire;
@@ -273,7 +170,6 @@ bool oncmd_tpa(CommandOrigin const& ori, CommandOutput& outp, MyEnum<direction> 
 	case TPFailReason::success:
 	{
 		DoMakeReq({ *(ServerPlayer*)ori.getEntity() }, t, dir);
-		CSUCC;
 		return true;
 	}
 		break;
@@ -298,24 +194,6 @@ bool oncmd_tpa(CommandOrigin const& ori, CommandOutput& outp, MyEnum<direction> 
 enum class TPAOP :int {
 	ac=1,de=2,cancel=3,toggle=4
 };
-enum class TPAOPGUI :int {
-	gui=1
-};
-bool oncmd_tpagui(CommandOrigin const& ori, CommandOutput& outp, MyEnum<TPAOPGUI> op) {
-	auto wp = MakeWP(ori);
-	using namespace GUI;
-	auto sf = make_shared<FullForm>();
-	sf->title = "TPA GUI";
-	sf->addWidget(GUIDropdown(string(I18N::S_OPERATION), { "to","here" }));
-	sf->addWidget(GUIDropdown(string(I18N::S_TARGET), getPlayerList()));
-	sendForm(wp.val(), FullFormBinder(sf, [](WPlayer w, FullFormBinder::DType d) {
-		if (d.set) {
-			auto [dat, ext] = d.val();
-			w.runcmdA("tpa",ext[0],QUOTE(ext[1]));
-		}
-		}));
-	return true;
-}
 bool oncmd_tpa2(CommandOrigin const& ori, CommandOutput& outp, MyEnum<TPAOP> op){
 	switch (op) {
 	case TPAOP::ac: {
@@ -324,7 +202,6 @@ bool oncmd_tpa2(CommandOrigin const& ori, CommandOutput& outp, MyEnum<TPAOP> op)
 			return false;
 		}
 		DoCloseReq(it.val(), TPCloseReason::accept);
-		CSUCC;
 		break;
 	}
 	case TPAOP::de: {
@@ -333,7 +210,6 @@ bool oncmd_tpa2(CommandOrigin const& ori, CommandOutput& outp, MyEnum<TPAOP> op)
 			return false;
 		}
 		DoCloseReq(it.val(), TPCloseReason::deny);
-		CSUCC;
 		break;
 	}
 	case TPAOP::cancel: {
@@ -342,7 +218,7 @@ bool oncmd_tpa2(CommandOrigin const& ori, CommandOutput& outp, MyEnum<TPAOP> op)
 			return false;
 		}
 		DoCloseReq(it.val(), TPCloseReason::cancel);
-		CSUCC;
+		
 		break;
 	}
 	case TPAOP::toggle: {
@@ -350,7 +226,7 @@ bool oncmd_tpa2(CommandOrigin const& ori, CommandOutput& outp, MyEnum<TPAOP> op)
 		auto state = !tpaSetting[hs].Accept;
 		tpaSetting[hs].Accept = state;
 		outp.addMessage("new state " + std::to_string(state));
-		CSUCC;
+		
 		break;
 	}
 	}
@@ -380,21 +256,21 @@ bool oncmd_warp(CommandOrigin const& ori, CommandOutput& outp, MyEnum<WARPOP> op
 		WActor wa{ MakeWP(ori).val() };
 		warps.emplace(val.value(), wa);
 		saveWarps();
-		CSUCC;
+		
 		break;
 	}
 	case del: {
 		if (ori.getPermissionsLevel() < 1) return false;
 		warps.erase(val.value());
 		saveWarps();
-		CSUCC;
+		
 		break;
 	}
 	case ls: {
 		for (auto& i : warps) {
 			outp.addMessage(i.first + " " + i.second.toStr());
 		}
-		CSUCC;
+		
 		break;
 	}
 	case go: {
@@ -404,7 +280,7 @@ bool oncmd_warp(CommandOrigin const& ori, CommandOutput& outp, MyEnum<WARPOP> op
 			return false;
 		}
 		it->second.teleport(MakeWP(ori).val());
-		CSUCC;
+		
 		break;
 	}
 	default:
@@ -435,7 +311,7 @@ bool generic_home(CommandOrigin const& ori, CommandOutput& outp, Homes& hm, MyEn
 		hm.data.emplace_back(val.value(), vc);
 		hm.save();
 		outp.success("home point `" + val.value() + "` was set successfully!!");
-		CSUCC;
+		
 	break;
 	}
 	case del: {
@@ -443,21 +319,21 @@ bool generic_home(CommandOrigin const& ori, CommandOutput& outp, Homes& hm, MyEn
 			return x.name == val.value();
 			});
 		hm.save();
-		CSUCC;
+		
 		break;
 	}
 	case ls: {
 		for (auto& i : hm.data) {
 			outp.addMessage(i.name + " " + i.pos.toStr());
 		}
-		CSUCC;
+		
 		break;
 	}
 	case go: {
 		for (auto& i : hm.data) {
 			if (i.name == val.value()) {
 				i.pos.teleport(MakeWP(ori).val());
-				CSUCC;
+				
 				return true;
 			}
 		}
@@ -472,15 +348,13 @@ bool generic_home(CommandOrigin const& ori, CommandOutput& outp, Homes& hm, MyEn
 }
 bool oncmd_home(CommandOrigin const& ori, CommandOutput& outp, MyEnum<WARPOP> op, optional<string>& val) {
 	if (op == WARPOP::gui) {
-		sendHOMEGUI(MakeWP(ori).val());
-		return true;
+		outp.error("Not impl");
+		return false;
 	}
-	Homes hm{ ori.getName() };
-	return generic_home(ori, outp, hm, op, val);
+	return generic_home(ori, outp, getHomeInCache(MakeWP(ori).val().getXuid()), op, val);
 }
 bool oncmd_homeAs(CommandOrigin const& ori, CommandOutput& outp, string const& target, MyEnum<WARPOP> op, optional<string>& val) {
-	Homes hm{ target };
-	return generic_home(ori, outp, hm, op, val);
+	return generic_home(ori, outp, getHomeInCache(XIDREG::str2id(target).val()), op, val);
 }
 #pragma endregion
 #pragma region BACK
@@ -492,7 +366,7 @@ bool oncmd_back(CommandOrigin const& ori, CommandOutput& outp) {
 	}
 	deathPos[sp].teleport({ *sp });
 	deathPos._map.erase(sp);
-	CSUCC;
+	
 	return true;
 }
 #pragma endregion
@@ -500,7 +374,7 @@ bool oncmd_suicide(CommandOrigin const& ori, CommandOutput& outp) {
 	auto wp = MakeWP(ori);
 	if (wp.set) {
 		wp.val().kill();
-		CSUCC;
+		
 	}
 	return true;
 }
@@ -531,7 +405,10 @@ void loadall() {
 	}
 	loadCfg();
 }
+void InitLUAAPI();
+#include<bdxlua.h>
 void tpa_entry() {
+	registerLuaLoadHook(InitLUAAPI);
 	checkLandOwnerRange_stub({ 0, 0 }, { 0, 0 }, 0, 0);
 	db=MakeKVDB(GetDataPath("tpa"), true, 8);
 	loadall();
@@ -541,7 +418,6 @@ void tpa_entry() {
 		CEnum<direction> _1("tpdir", { "to","here" });
 		CEnum<WARPOP> _2("warpop", {"go","add","ls","del","gui"});
 		CEnum<TPAOP> _3("tpaop", {"ac","de","cancel","toggle"});
-		CEnum<TPAOPGUI> _4("tpagui", { "gui" });
 		MakeCommand("tpa", "tpa system", 0);
 		MakeCommand("warp", "warp system", 0);
 		MakeCommand("home", "home system", 0);
@@ -552,7 +428,6 @@ void tpa_entry() {
 		CmdOverload(homeAs, oncmd_homeAs,"Pname","op","home_name");
 		CmdOverload(tpa, oncmd_tpa, "dir","target");
 		CmdOverload(tpa, oncmd_tpa2, "op");
-		CmdOverload(tpa, oncmd_tpagui, "gui");
 		MakeCommand("tpareload", "reload tpa", 1);
 		CmdOverload(tpareload, onReload);
 		if (BACK_ENABLED) {

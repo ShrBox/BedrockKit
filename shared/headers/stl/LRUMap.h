@@ -180,3 +180,32 @@ struct U64LRUmap {
 		return &nd.val.val;
 	}
 };
+template <typename TK,typename TV, size_t buksz = 64>
+struct LRUMap {
+	struct _MyPair {
+		TK key;
+		TV val;
+		_MyPair(){}
+		_MyPair(TK const& k,TV&& v):key(k),val(std::forward<TV>(v)){}
+	};
+	U64LRUmap<_MyPair, buksz> _C;
+	LRUMap(size_t sz):_C(sz){}
+	static size_t Hash(TK const& k) {
+		return std::hash<TK>{}(k);
+	}
+	void clear() {
+		_C.clear();
+	}
+	size_t size() {
+		return _C._size();
+	}
+	TV* find(TK const& k) {
+		auto H = Hash(k);
+		auto res = _C.find(H);
+		if (res) return &res->val;
+		return nullptr;
+	}
+	TV* insert(TK const& key, TV&& val) {
+		return &_C.insert(Hash(key), key, std::forward<TV>(val))->val;
+	}
+};

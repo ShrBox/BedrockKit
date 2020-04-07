@@ -55,5 +55,9 @@ int lua_call_bind_proxy(lua_State* L) {
 		luaL_error(L, "lbind error in %s : %s", str, e.c_str());
 		return 0;
 	}
+	catch (...) {
+		luaL_error(L, "lbind internal error in %s", str);
+		return 0;
+	}
 	return 0;
 }

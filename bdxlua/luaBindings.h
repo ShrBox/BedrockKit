@@ -27,3 +27,6 @@ extern unique_ptr<KVDBImpl> db;
 bool CallEvent(string const& name, static_queue<ldata_ref_t, 8> const& arg);
 int lb_regEventL(lua_State* L);
 int lb_unregEventL(lua_State* L);
+
+int lua_bind_GUI_Raw(lua_State* L);
+int lua_bind_GUI(lua_State* L);

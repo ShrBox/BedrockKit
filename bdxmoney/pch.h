@@ -18,5 +18,5 @@
 #include"bdxlua.h"
 #include<api/gui/gui.h>
 #include<lua.hpp>
-
+#include<bdxlua.h>
 #endif //PCH_H

@@ -319,7 +319,7 @@ void entry() {
 		if (ev.maySpam) return;
 		auto it = CMDMAP.find(id);
 		if (it != CMDMAP.end()) ev.getPlayer().runcmd(it->second),ev.setCancelled();
-		});
+		},EvPrio::HIGH);
 	LOG("server started");
 }
 THook(void, "?write@TextPacket@@UEBAXAEAVBinaryStream@@@Z", void* a, void* b) {
