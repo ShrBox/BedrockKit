@@ -247,6 +247,12 @@ void sendSimp(WPlayer w, std::stringstream& ss, string cb,string cb2,string && t
         }
       } });
 }
+bool Str2Bool(string_view sv) {
+    if (!isdigit(sv[0])) {
+        return sv.find("true")!=sv.npos;
+    }
+    return atoi(sv);
+}
 void sendFull(WPlayer w, std::stringstream& ss, string cb, string cb2, string&& tit) {
     using namespace GUI;
     shared_ptr<FullForm> sf = make_shared<FullForm>();
@@ -288,7 +294,7 @@ void sendFull(WPlayer w, std::stringstream& ss, string cb, string cb2, string&& 
             break;
         }
         case H("toggle"): {
-            sf->widgets.emplace_back(GUIToggle(string{ mp[H("text")] }, atoi(mp[H("def")])));
+            sf->widgets.emplace_back(GUIToggle(string{ mp[H("text")] }, Str2Bool(mp[H("def")])));
             break;
         }
         default: {

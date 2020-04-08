@@ -15,6 +15,7 @@ struct PointSelector {
 		if (mode == 1) { //A
 			selectedA = true;
 			A = pos;
+			dim = _dim;
 			return true;
 		}
 		else {

@@ -693,6 +693,7 @@ void FIX_LAND_PERM_GROUP_0405() {
 #include<bdxlua.h>
 #include<lua.hpp>
 #include<luafly.h>
+template<bool View=false>
 int lb_getLand(lua_State* L) {
 	try {
 		//x y z dim
@@ -715,13 +716,19 @@ int lb_getLand(lua_State* L) {
 				owners.emplace_back(std::move(own.val()));
 			}
 		}
-		lf.pushs(permo, permg, owners);
+		if constexpr (View) {
+			lf.pushs(permo, permg, Vec2Str(owners));
+		}
+		else {
+			lf.pushs(permo, permg, owners);
+		}
 		return 3;
 	}CATCH()
 }
 void InitLUA() {
 	registerLuaLoadHook([]() {
 		lua_register(L, "getLand", lb_getLand);
+		lua_register(L, "getLandV", lb_getLand<true>);
 	});
 }
 void entry() {

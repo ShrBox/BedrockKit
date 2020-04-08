@@ -39,6 +39,21 @@ int lb_runcmd(lua_State* L) {
 	lua_pushboolean(L, rv);
 	return 1;
 }
+int lb_runcmdex(lua_State* L) {
+	auto n = lua_gettop(L);
+	if (n < 1) {
+		luaL_error(L, "runcmdex(cmd)");
+		return 0;
+	}
+	size_t s1;
+	auto _n = lua_tolstring(L, 1, &s1);
+	string_view cmd(_n, s1);
+	auto [rv,res] = BDX::runcmdEx(string{ cmd });
+	lua_pop(L, n);
+	lua_pushboolean(L, rv);
+	lua_pushlstring(L, res.data(),res.size());
+	return 2;
+}
 int lb_runcmdAs(lua_State* L) {
 	auto n = lua_gettop(L);
 	if (n < 2) {

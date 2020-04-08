@@ -15,13 +15,64 @@ struct stdio_commit {
 
 	}
 };
+#include<filesystem>
+#include<string>
+using std::string;
 struct file_commit {
 	std::ofstream dat;
-	file_commit(const char* fn) : dat(fn, std::ios::app) {
+	const char* fn;
+	unsigned int totalWrite=0;
+	unsigned int maxWrite;
+	unsigned int maxLogs;
+	string LogName(int i) {
+		if (i == 0)
+			return fn;
+		return string(fn) + "." + std::to_string(i);
+	}
+	void CleanUpLogs() {
+		using namespace std;
+		try {
+			filesystem::remove(LogName(maxLogs));
+		}
+		catch (...) {
+		}
+		for (int i = maxLogs - 1; i >= 0; --i) {
+			try {
+				filesystem::rename(LogName(i), LogName(i + 1));
+			}
+			catch (...) {
+			}
+		}
+	}
+	void TryTidyUp() {
+		using namespace std;
+		try {
+			auto nowsz = filesystem::file_size(fn);
+			if (nowsz >= maxWrite) {
+				CleanUpLogs();
+			}
+		}
+		catch (...) {}
+	}
+	file_commit(const char* fn_,unsigned int maxLogs_=3,unsigned int maxWrite_=4*1024*1024) {
+		//maxWrite 4MB fn.log fn.log.1 fn.log.2
+		fn = fn_;
+		maxWrite = maxWrite_;
+		maxLogs = maxLogs_;
+		TryTidyUp();
+		dat = std::ofstream(fn, std::ios::app);
 	}
 	void operator()(string_view extra, string_view content) {
 		dat << extra;
 		dat << content << '\n';
+		totalWrite += extra.size() + content.size();
+		if (totalWrite > maxWrite) {
+			dat.flush();
+			dat.close();
+			TryTidyUp();
+			dat = std::ofstream(fn, std::ios::app);
+			totalWrite = 0;
+		}
 	}
 };
 template <typename... TP>

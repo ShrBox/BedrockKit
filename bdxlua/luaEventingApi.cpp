@@ -10,6 +10,9 @@ static const std::unordered_set<string> AVAILABLE_EVENTS = {
 "onPlayerKillMob",
 "onLCMD"
 };
+void resetEventing() {
+	listeners.clear();
+}
 bool CallEvent(string const& name, static_queue<ldata_ref_t, 8> const& arg) {
 	auto [it, ite] = listeners.equal_range(name);
 	while (it != ite) {

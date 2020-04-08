@@ -5,7 +5,7 @@
 
 void InitExplodeProtect();
 
-Logger<stacked<stdio_commit, file_commit>> LOG(stacked{ stdio_commit{"[BH] "},file_commit{"bdx.log"} });
+Logger<stacked<stdio_commit, file_commit>> LOG(stacked{ stdio_commit{"[BH] "},file_commit("bdx.log",6,2*1024*1024) });
 bool EXP_PLAY;
 unordered_map<int, string> CMDMAP;
 bool regABILITY;

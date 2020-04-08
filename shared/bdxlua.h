@@ -60,5 +60,17 @@ int lua_bind_GUI(lua_State* L);
 		luaL_error(L, "internal error"); \
 		return 0; \
 	}
-
-
+template<typename T>
+static inline string Vec2Str(std::vector<T> const& x){
+	string rv="[";
+	rv.reserve(x.size() * 12);
+	for (auto& i : x) {
+		rv.push_back('"');
+		rv.append(i);
+		rv.push_back('"');
+		rv.push_back(',');
+	}
+	if (rv.back() == ',') rv.pop_back();
+	rv.push_back(']');
+	return rv;
+}

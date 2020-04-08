@@ -6,10 +6,13 @@ int lua_call_bind_proxy(lua_State* L);
 int lb_sendText(lua_State* L);
 int lb_runcmd(lua_State* L);
 int lb_runcmdAs(lua_State* L);
+int lb_runcmdex(lua_State* L);
 int lb_oListV(lua_State* L);
 int lb_oList(lua_State* L);
-int lb_bctext(lua_State* L);
 int lb_getpos(lua_State* L);
+int lb_bctext(lua_State* L);
+
+int lb_log(lua_State* L);
 
 
 int lb_dbget(lua_State* L);

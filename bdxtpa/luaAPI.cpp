@@ -3,6 +3,7 @@
 #include<lua.hpp>
 #include<luafly.h>
 #include"homeStorage.h"
+template<bool View=false>
 int lb_getHomes(lua_State* L) {
 	try {
 		LuaFly lf{ L };
@@ -14,10 +15,16 @@ int lb_getHomes(lua_State* L) {
 		for (auto& i : homes.data) {
 			homenames.emplace_back(i.name);
 		}
-		lf.push(homenames);
+		if constexpr (View) {
+			lf.push(Vec2Str(homenames));
+		}
+		else {
+			lf.push(homenames);
+		}
 		return 1;
 	}CATCH()
 }
 void InitLUAAPI() {
-	lua_register(L, "getHomes", lb_getHomes);
+	lua_register(L, "getHomes", lb_getHomes<false>);
+	lua_register(L, "getHomesV", lb_getHomes<true>);
 }

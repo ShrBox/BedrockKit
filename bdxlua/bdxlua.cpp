@@ -62,6 +62,8 @@ void reg_all_bindings() {
 	lua_register(L, "bcText", lb_bctext);
 	lua_register(L, "runCmd", lb_runcmd);
 	lua_register(L, "runCmdAs", lb_runcmdAs);
+	lua_register(L, "runCmdEx", lb_runcmdex);
+	lua_register(L, "Log", lb_log);
 	lua_register(L, "oList", lb_oList);
 	lua_register(L, "oListV", lb_oListV);
 	lua_register(L, "GUI", lua_bind_GUI);
@@ -106,10 +108,12 @@ string wstr2str(std::wstring const& str) {
 	WideCharToMultiByte(GetACP(), 0, str.c_str(), str.size(), res.data(), res.size(), nullptr, nullptr);
 	return res;
 }
+void resetEventing();
 bool loadlua() {
 	if (L) {
 		lua_close(L);
 		lua_scheduler_reload();
+		resetEventing();
 	}
 	L = luaL_newstate();
 	luaL_openlibs(L);
@@ -154,10 +158,13 @@ bool oncmd_reloadlua(CommandOrigin const& ori, CommandOutput& outp) {
 #include<filesystem>
 void glang_send(WPlayer wp, const string& payload);
 string getForm(string_view name);
+namespace LEX {
+	string Compile(string_view source, vector<string> const& val);
+};
 bool oncmd_gui(CommandOrigin const& ori, CommandOutput& outp,string& v) {
 	auto wp = MakeWP(ori);
 	if (v.find('.') != v.npos || v.find('/') != v.npos || v.find('\\') != v.npos) return false;
-	glang_send(wp.val(), getForm("u_" + v));
+	glang_send(wp.val(), LEX::Compile(getForm("u_" + v), {}));
 	return true;
 }
 bool oncmd_luacmd(CommandOrigin const& ori, CommandOutput& outp, CommandMessage& m) {
