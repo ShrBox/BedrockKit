@@ -1,2 +1,0 @@
-sqlitecpp           (bdxmoney)
-lua                    (bdxlua)
