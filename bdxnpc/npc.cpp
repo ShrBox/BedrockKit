@@ -14,6 +14,9 @@ enum NPCOP_SETROT :int {
 enum NPCOP_REMOVE:int {
 	REMOVE=1
 };
+enum NPCOP_DFLAG :int {
+	DFLAG = 1
+};
 string MINECRAFT_ENTITY_TYPE(string x) {
 	if (x.find(':') != x.npos) return x;
 	else return "minecraft:" + x;
@@ -26,20 +29,44 @@ struct NPC {
 	Vec3 rot;
 	eid_t eid;
 	string data;
+	int dim;
+#define SBIT(x) (1ull<<x)
+	unsigned long long flag = SBIT(14) | SBIT(15);
 	void pack(WBStream& bs)const{
 		bs.apply(name, nametag, type, pos,rot, eid, data);
+	}
+	static unsigned long long getFLAGS(string_view val) {
+		split_view spv(val);
+		unsigned long long rv = 0;
+		for (; !spv.end(); ++spv) {
+			int bit = atoi(spv.get());
+			rv |= 1ull << bit;
+		}
+		return rv;
 	}
 	void unpack(RBStream& bs) {
 		bs.apply(name, nametag, type, pos,rot, eid, data);
 		type = MINECRAFT_ENTITY_TYPE(type);
+		string val;
+		if (db->get(string("npcdata_") + name, val)) {
+			flag = getFLAGS(val);
+		}
+		else {
+			flag = SBIT(14) | SBIT(15);
+		}
+		if (db->get(string("npcdim_") + name, val)) {
+			dim = *(int*)val.data();
+		}
+		else {
+			dim = 0;
+		}
 	}
 	void NetAdd(WBStream& bs)const{
-#define SBIT(x) (1ull<<x)
 		bs.apply(VarULong(eid), VarULong(eid), MCString(type), pos, Vec3{ 0,0,0 }
 			, rot, //rotation
 			VarUInt(0), //attr
 			VarUInt(3), //metadata :3
-			VarUInt(0),VarUInt(7),VarULong(SBIT(14)|SBIT(15)), //FLAGS:showtag
+			VarUInt(0),VarUInt(7),VarULong(flag), //FLAGS:showtag
 			VarUInt(80),VarUInt(0),(char)1, //always show tag
 			VarUInt(4),VarUInt(4),MCString(nametag), //nametag
 			VarUInt(0) //entity link
@@ -93,39 +120,57 @@ bool NPCCMD_LIST(CommandOrigin const& ori, CommandOutput& outp, MyEnum<NPCOP_LIS
 	for (auto& i : npcs) {
 		if (name.set) {
 			if (i.second.name == name.value()) {
-				outp.addMessage("NPC " + i.second.name + " tag " + i.second.nametag + " pos " + i.second.pos.toString());
+				outp.addMessage("NPC " + i.second.name + " tag " + i.second.nametag + " pos " + i.second.pos.toString()+" dim "+S(i.second.dim));
 				return true;
 			}
 		}
 		else {
-			outp.addMessage("NPC " + i.second.name + " tag " + i.second.nametag + " pos " + i.second.pos.toString());
+			outp.addMessage("NPC " + i.second.name + " tag " + i.second.nametag + " pos " + i.second.pos.toString() + " dim " + S(i.second.dim));
 		}
 	}
 	return true;
 }
-void broadcastPKT(Packet& pk) {
+void broadcastPKT(Packet& pk,int dimid) {
 	auto usr=LocateS<WLevel>()->getUsers();
 	for (auto i : usr) {
-		i->sendNetworkPacket(pk);
+		if(i.getDimID()==dimid)
+			i->sendNetworkPacket(pk);
 	}
 }
 void broadcastNPCADD(eid_t nid) {
 	WBStream ws;
 	npcs[nid].NetAdd(ws);
 	MyPkt<0xd> pk{ ws };
-	broadcastPKT(pk);
+	broadcastPKT(pk,npcs[nid].dim);
 }
 void broadcastNPCREMOVE(eid_t nid) {
 	WBStream ws;
 	npcs[nid].NetRemove(ws);
 	MyPkt<14> pk{ ws };
-	broadcastPKT(pk);
+	broadcastPKT(pk,npcs[nid].dim);
 }
-void sendNPCADD(WPlayer ply,eid_t nid) {
+void __sendADDNPC(WPlayer wp, NPC const& n) {
 	WBStream ws;
-	npcs[nid].NetAdd(ws);
+	n.NetAdd(ws);
 	MyPkt<0xd> pk{ ws };
-	ply->sendNetworkPacket(pk);
+	wp->sendNetworkPacket(pk);
+}
+void __sendDELNPC(WPlayer wp, NPC const& n) {
+	WBStream ws;
+	n.NetRemove(ws);
+	MyPkt<14> pk{ ws };
+	wp->sendNetworkPacket(pk);
+}
+void resendAllNPC(WPlayer wp) {
+	auto dimid = wp.getDimID();
+	for (auto const& [id,n] : npcs) {
+		if (n.dim == dimid) {
+			__sendADDNPC(wp, n);
+		}
+		else {
+			__sendDELNPC(wp, n);
+		}
+	}
 }
 bool NPCCMD_ADD(CommandOrigin const& ori, CommandOutput& outp, MyEnum<NPCOP_ADD>,string& name,string& type,string& tag,string& data) {
 	NPC npc;
@@ -140,6 +185,9 @@ bool NPCCMD_ADD(CommandOrigin const& ori, CommandOutput& outp, MyEnum<NPCOP_ADD>
 	WBStream ws;
 	ws.apply(npc);
 	db->put("npc_" + name,ws);
+	int dimid = MakeWP(ori).val().getDimID();
+	db->put("npcdim_" + name, to_view(dimid));
+	npc.dim = dimid;
 	npcs.emplace(NPCID-1,std::move(npc));
 	broadcastNPCADD(NPCID - 1);
 	outp.addMessage("added npc " + name);
@@ -149,6 +197,8 @@ bool NPCCMD_REMOVE(CommandOrigin const& ori, CommandOutput& outp, MyEnum<NPCOP_R
 	for (auto it = npcs.begin(); it != npcs.end();++it) {
 		if (it->second.name == name) {
 			db->del("npc_" + name);
+			db->del("npcdata_" + name);
+			db->del("npcdim_" + name);
 			auto del = it->first;
 			broadcastNPCREMOVE(it->first);
 			npcs.erase(del);
@@ -168,6 +218,21 @@ bool NPCCMD_SETROT(CommandOrigin const& ori, CommandOutput& outp, MyEnum <NPCOP_
 			db->put("npc_" + it->second.name, ws);
 			broadcastNPCREMOVE(np.eid);
 			broadcastNPCADD(np.eid);
+			return true;
+		}
+	}
+	return false;
+}
+bool NPCCMD_DFLAG(CommandOrigin const& ori, CommandOutput& outp, MyEnum <NPCOP_DFLAG>,string& name,string& flag) {
+	auto Flag = NPC::getFLAGS(flag);
+	for (auto it = npcs.begin(); it != npcs.end(); ++it) {
+		if (it->second.name == name) {
+			NPC& np = it->second;
+			it->second.flag = Flag;
+			broadcastNPCREMOVE(np.eid);
+			broadcastNPCADD(np.eid);
+			db->put("npcdata_" + name, flag);
+			outp.addMessage(S(flag));
 			return true;
 		}
 	}
@@ -197,17 +262,22 @@ void entry_npc() {
 		CEnum<NPCOP_ADD> _2("npc_add", {"add"});
 		CEnum<NPCOP_LIST> _3("npc_list", { "list" });
 		CEnum<NPCOP_REMOVE> _4("npc_remove", { "remove" });
+		CEnum< NPCOP_DFLAG> _5("npc_dflag", { "dflag" });
 		CmdOverload(npc, NPCCMD_ADD,"add","name","type","nametag","lua_fn");
 		CmdOverload(npc, NPCCMD_LIST,"list","name");
 		CmdOverload(npc, NPCCMD_REMOVE,"remove","name");
 		CmdOverload(npc, NPCCMD_SETROT, "setrot","name","pitch", "from_yaw", "to_yaw");
+		CmdOverload(npc, NPCCMD_DFLAG, "dflag","name", "flag");
 	});
 	addListener([](PlayerJoinEvent& ev) {
-		for(auto& i:npcs)
-			sendNPCADD(ev.getPlayer(),i.first);
+		resendAllNPC(ev.getPlayer());
 		});
+	addListener([](PlayerChangeDimEvent& ev) {
+		resendAllNPC(ev.getPlayer());
+	});
 	addListener([](PlayerUseItemOnEntityEvent& ev) {
 		auto rtid = ev.rtid;
+		if (!ev.isAttack()) return;
 		auto it = npcs.find(rtid);
 		if (it != npcs.end()) {
 			if (!call_lua(it->second.data.c_str(), { {&ev.getPlayer().getName() } }).set) {

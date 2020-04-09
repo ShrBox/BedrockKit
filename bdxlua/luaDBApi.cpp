@@ -48,3 +48,46 @@ int lb_dbdel(lua_State* L) {
 		return 0;
 	}
 }
+int lb_dbforeach(lua_State* L) {
+	try {
+		LuaFly fly{ L };
+		xstring prefix,cb;
+		fly.pops(cb,prefix);
+		bool flag = false;
+		db->iter([prefix,&fly,cb,&flag](string_view k, string_view v) {
+			if (k._Starts_with(prefix)) {
+				flag = true;
+				fly.Call(cb.c_str(), 0, k, v);
+			}
+			else {
+				if (flag) return false;
+			}
+			return true;
+		});
+	}
+	catch (string e) {
+		luaL_error(L, e.c_str());
+		return 0;
+	}
+}
+int lb_dbremoveif(lua_State* L) {
+	try {
+		LuaFly fly{ L };
+		xstring prefix, cb;
+		fly.pops(cb, prefix);
+		bool flag = false;
+		db->iter([prefix,&flag](string_view k) {
+			if (k._Starts_with(prefix)) {
+				flag = true;
+			}
+			else {
+				if (flag) return false;
+			}
+			return true;
+			});
+	}
+	catch (string e) {
+		luaL_error(L, e.c_str());
+		return 0;
+	}
+}

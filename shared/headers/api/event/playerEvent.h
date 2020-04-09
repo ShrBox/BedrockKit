@@ -1,6 +1,6 @@
 ﻿#pragma once
 #include "eventBase.h"
-
+#include "../types/types.h"
 class PlayerChatEvent : public IGenericPlayerEvent<PlayerChatEvent> {
 public:
 	string& _chat;
@@ -15,6 +15,14 @@ public:
 	PlayerCMDEvent(ServerPlayer& sp, string& cmd) : IGenericPlayerEvent(sp), _cmd(cmd) {}
 	const string& getCMD() {
 		return _cmd;
+	}
+};
+class PlayerChangeDimEvent : public IEventBase<PlayerChangeDimEvent>,public IPlayerEvent {
+public:
+	int DstDim,SrcDim;
+	PlayerChangeDimEvent(ServerPlayer& sp,int src,int dst):IPlayerEvent(sp) {
+		DstDim = dst;
+		SrcDim = src;
 	}
 };
 class PlayerPreJoinEvent : public IEventBase<PlayerPreJoinEvent> {

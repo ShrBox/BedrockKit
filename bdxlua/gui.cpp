@@ -123,6 +123,7 @@ namespace LEX {
                     rv.append(GUI::getPlayerListView());
                 }
                 else {
+                    printf("CV %d val %d\n", CV,val.size());
                     CV--;
                     if (CV >= val.size()) {
                         throw "Compile IDX Overflow "s+S(CV)+" vs. "+S(val.size());
@@ -375,12 +376,12 @@ void glang_send(WPlayer wp,const string& payload) {
 }
 string lua_popStr(lua_State* L,int n) {
     size_t Lstr;
-    const char* pStr = luaL_tolstring(L, n, &Lstr);
+    const char* pStr = lua_tolstring(L, n, &Lstr);
     return { pStr,Lstr };
 }
 string_view lua_popStrV(lua_State* L, int n) {
     size_t Lstr;
-    const char* pStr = luaL_tolstring(L, n, &Lstr);
+    const char* pStr = lua_tolstring(L, n, &Lstr);
     return { pStr,Lstr };
 }
 int lua_bind_GUI_impl(lua_State* L,string_view sv) {
@@ -395,7 +396,6 @@ int lua_bind_GUI_impl(lua_State* L,string_view sv) {
         luaL_error(L, "player offline");
         return 0;
     }
-    auto wp=p.val();
     vector<string> X;
     try {
         LuaFly fly{ L };
@@ -406,7 +406,7 @@ int lua_bind_GUI_impl(lua_State* L,string_view sv) {
         } //step 2 lua->vector
         lua_settop(L, 0);
          auto compiled=LEX::Compile(sv, X);
-         glang_send(wp, compiled);
+         glang_send(p.val(), compiled);
     }
     CATCH()
     return 0;

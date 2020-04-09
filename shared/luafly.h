@@ -17,6 +17,7 @@ public:
     using string::operator+=;
 
 };
+
 struct LuaFly {
     lua_State* L;
     LuaFly(lua_State* L_) {
@@ -129,7 +130,7 @@ struct LuaFly {
         if (!lua_isstring(L, -1))
             throw "str required, but "s + luaL_typename(L, -1) + " found";
         size_t sz;
-        auto str = luaL_tolstring(L, -1, &sz);
+        auto str = lua_tolstring(L, -1, &sz);
         x = string(str, sz);
         lua_pop(L, 1);
     }
