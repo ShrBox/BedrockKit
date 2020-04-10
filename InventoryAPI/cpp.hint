@@ -1,0 +1,2 @@
+#define INVENTORYAPI_API __declspec(dllexport)
+#define INVENTORYAPI_API __declspec(dllimport)

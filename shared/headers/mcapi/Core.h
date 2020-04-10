@@ -8,7 +8,7 @@
 enum ActorType : int;
 enum class AbilitiesIndex : int;
 static inline int iround(float x) {
-	int r = x;
+	int r = int(x);
 	if (x < 0)
 		r--;
 	return r;

@@ -197,6 +197,10 @@ bool onCMD_skick(CommandOrigin const& ori, CommandOutput& outp,string& target) {
 		auto name = i.getName();
 		LOWERSTRING(name);
 		if (name._Starts_with(target)) {
+			if (name == target) {
+				i.forceKick();
+				return true;
+			}
 			to_kick.push_back(i);
 		}
 	}
@@ -220,11 +224,21 @@ static bool oncmd_toggle_debug(CommandOrigin const& ori, CommandOutput& outp) {
 	else {
 		id = addListener([](PlayerUseItemOnEvent& ev) {
 			ev.getPlayer().sendText(ev.getItemInHand()->toString());
+			ev.getPlayer().sendText(S(ev.getItemInHand()->getId()) + ":" + S(ev.getItemInHand()->getAuxValue()));
 		}, EvPrio::HIGH);
 		id2 = addListener([](MobDeathEvent& ev) {
 			LocateS<WLevel>()->broadcastText(S(ev.getMob()->getEntityTypeId())+" died");
 		}, EvPrio::HIGH);
 		outp.success("enabled");
+	}
+	return true;
+}
+enum GameType:int{};
+static bool oncmd_gamemode(CommandOrigin const& ori, CommandOutput& outp,CommandSelector<Player>& s,int mode) {
+	auto res=s.results(ori);
+	if (!Command::checkHasTargets(res, outp)) return false;
+	for (auto i : res) {
+		((ServerPlayer*)i)->setPlayerGameType((GameType)mode);
 	}
 	return true;
 }
@@ -251,6 +265,8 @@ void entry() {
 		CmdOverload(hreload, onReload);
 		MakeCommand("idbg", "toggle debug mode", 1);
 		CmdOverload(idbg, oncmd_toggle_debug);
+		MakeCommand("gmode","set gamemode",1);
+		CmdOverload(gmode, oncmd_gamemode, "target", "mode");
 		if (regABILITY) {
 			SymCall("?setup@AbilityCommand@@SAXAEAVCommandRegistry@@@Z", void, CommandRegistry&)(LocateS<CommandRegistry>());
 		}

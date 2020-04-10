@@ -65,7 +65,7 @@ struct file_commit {
 	void operator()(string_view extra, string_view content) {
 		dat << extra;
 		dat << content << '\n';
-		totalWrite += extra.size() + content.size();
+		totalWrite += (unsigned int)(extra.size() + content.size());
 		if (totalWrite > maxWrite) {
 			dat.flush();
 			dat.close();

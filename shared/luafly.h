@@ -151,6 +151,20 @@ struct LuaFly {
         lua_pop(L, 1);
     }
     template<typename TP>
+    void pop(std::vector<TP>& x) {
+        if (lua_gettop(L) == 0) throw "stack overflow"s;
+        if (!lua_istable(L, -1))
+            throw "table required, but "s + luaL_typename(L, -1) + " found";
+        lua_pushnil(L);
+        while (lua_next(L, -2)) {
+            //-2 index
+            TP v;
+            pop(v);
+            x.emplace_back(std::move(v));
+        }
+        lua_pop(L, 1); //pop key&table
+    }
+    template<typename TP>
     void pop(std::unordered_map<string, TP>& x) {
         if (lua_gettop(L) == 0) throw "stack overflow"s;
         if (!lua_istable(L, -1))
