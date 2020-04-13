@@ -5,6 +5,7 @@ public:
 	Dimension(const Dimension&) = delete;
 	Dimension& operator=(const Dimension&) = delete;
 	Dimension() = delete;
+	#ifdef MCAPI_DIM_EXTRA
 	MCINLINE float getClearColorScale() {
 		float (Dimension::*rv)();
 		*((void**)&rv) = dlsym("?getClearColorScale@Dimension@@UEAAMXZ");
@@ -30,21 +31,13 @@ public:
 		*((void**)&rv) = dlsym("?isNaturalDimension@Dimension@@UEBA_NXZ");
 		return (this->*rv)();
 	}
-	MCINLINE float getTimeOfDay(float a0) const {
-		float (Dimension::*rv)(float) const;
-		*((void**)&rv) = dlsym("?getTimeOfDay@Dimension@@QEBAMM@Z");
-		return (this->*rv)(a0);
-	}
+	
 	MCINLINE void updateLightRamp() {
 		void (Dimension::*rv)();
 		*((void**)&rv) = dlsym("?updateLightRamp@Dimension@@UEAAXXZ");
 		return (this->*rv)();
 	}
-	MCINLINE bool isDay() const {
-		bool (Dimension::*rv)() const;
-		*((void**)&rv) = dlsym("?isDay@Dimension@@UEBA_NXZ");
-		return (this->*rv)();
-	}
+	
 	MCINLINE float getMaxFogStart() const {
 		float (Dimension::*rv)() const;
 		*((void**)&rv) = dlsym("?getMaxFogStart@Dimension@@UEBAMXZ");
@@ -85,11 +78,7 @@ public:
 		*((void**)&rv) = dlsym("?fetchNearestAttackablePlayer@Dimension@@QEAAPEAVPlayer@@VBlockPos@@MPEAVActor@@@Z");
 		return (this->*rv)(a0, a1, a2);
 	}
-	MCINLINE class BlockPos getSpawnPos() const {
-		class BlockPos (Dimension::*rv)() const;
-		*((void**)&rv) = dlsym("?getSpawnPos@Dimension@@UEBA?AVBlockPos@@XZ");
-		return (this->*rv)();
-	}
+	
 	MCINLINE bool hasGround() const {
 		bool (Dimension::*rv)() const;
 		*((void**)&rv) = dlsym("?hasGround@Dimension@@UEBA_NXZ");
@@ -190,11 +179,7 @@ public:
 		*((void**)&rv) = dlsym("?fetchNearestAttackablePlayer@Dimension@@QEAAPEAVPlayer@@AEAVActor@@M@Z");
 		return (this->*rv)(a0, a1);
 	}
-	MCINLINE class Actor* fetchEntity(struct ActorUniqueID a0, bool a1) {
-		class Actor* (Dimension::*rv)(struct ActorUniqueID, bool);
-		*((void**)&rv) = dlsym("?fetchEntity@Dimension@@QEAAPEAVActor@@UActorUniqueID@@_N@Z");
-		return (this->*rv)(a0, a1);
-	}
+	
 	MCINLINE int getMoonPhase() const {
 		int (Dimension::*rv)() const;
 		*((void**)&rv) = dlsym("?getMoonPhase@Dimension@@QEBAHXZ");
@@ -224,6 +209,27 @@ public:
 		void (Dimension::*rv)(class std::basic_string<char, struct std::char_traits<char>, class std::allocator<char>> const&);
 		*((void**)&rv) = dlsym("?onLevelDestruction@Dimension@@UEAAXAEBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@@Z");
 		return (this->*rv)(a0);
+	}
+#endif
+MCINLINE float getTimeOfDay(float a0) const {
+		float (Dimension::*rv)(float) const;
+		*((void**)&rv) = dlsym("?getTimeOfDay@Dimension@@QEBAMM@Z");
+		return (this->*rv)(a0);
+	}
+MCINLINE bool isDay() const {
+		bool (Dimension::*rv)() const;
+		*((void**)&rv) = dlsym("?isDay@Dimension@@UEBA_NXZ");
+		return (this->*rv)();
+	}
+MCINLINE class BlockPos getSpawnPos() const {
+		class BlockPos (Dimension::*rv)() const;
+		*((void**)&rv) = dlsym("?getSpawnPos@Dimension@@UEBA?AVBlockPos@@XZ");
+		return (this->*rv)();
+	}
+MCINLINE class Actor* fetchEntity(struct ActorUniqueID a0, bool a1) {
+		class Actor* (Dimension::*rv)(struct ActorUniqueID, bool);
+		*((void**)&rv) = dlsym("?fetchEntity@Dimension@@QEAAPEAVActor@@UActorUniqueID@@_N@Z");
+		return (this->*rv)(a0, a1);
 	}
 
 #if 0

@@ -5,6 +5,7 @@
 #include <sstream>
 #include <ctime>
 #include <iostream>
+#include<thread>
 using std::string_view;
 struct stdio_commit {
 	string_view prefix;
@@ -17,9 +18,60 @@ struct stdio_commit {
 };
 #include<filesystem>
 #include<string>
+#include<atomic>
+#include<api\lightbase.h>
+LBAPI void registerASYNC(struct asyncFStream*);
+LBAPI void unregisterASYNC(struct asyncFStream*,struct asyncFStream*);
+struct asyncFStream {
+	std::ofstream ofs;
+	std::atomic_flag _lock = ATOMIC_FLAG_INIT;
+	asyncFStream() {
+		registerASYNC(this);
+	}
+	asyncFStream(asyncFStream&& r) {
+		unregisterASYNC(&r,this);
+		ofs = std::move(r.ofs);
+		_lock.clear();
+	}
+	~asyncFStream() {
+		unregisterASYNC(this,nullptr);
+	}
+	void close() {
+		lock();
+		ofs.close();
+		unlock();
+	}
+	void open(const char* name) {
+		lock();
+		ofs.open(name, std::ios::app);
+		ofs << std::nounitbuf;
+		unlock();
+	}
+	volatile inline void lock() {
+		while (_lock.test_and_set(std::memory_order_acquire))
+			std::this_thread::yield();
+	}
+	volatile inline void unlock() {
+		_lock.clear(std::memory_order_release);
+	}
+	inline void _flush() {
+		ofs.flush();
+	}
+	void flushTimer() {
+		lock();
+		ofs.flush();
+		unlock();
+	}
+	template <typename... T>
+	void write(T&&... x) {
+		lock();
+		(ofs<<...<<std::forward<T>(x));
+		unlock();
+	}
+};
 using std::string;
 struct file_commit {
-	std::ofstream dat;
+	asyncFStream dat;
 	const char* fn;
 	unsigned int totalWrite=0;
 	unsigned int maxWrite;
@@ -54,23 +106,28 @@ struct file_commit {
 		}
 		catch (...) {}
 	}
-	file_commit(const char* fn_,unsigned int maxLogs_=3,unsigned int maxWrite_=4*1024*1024) {
+	file_commit(const char* fn_, unsigned int maxLogs_ = 3, unsigned int maxWrite_ = 4 * 1024 * 1024) {
 		//maxWrite 4MB fn.log fn.log.1 fn.log.2
 		fn = fn_;
+		dat.open(fn);
 		maxWrite = maxWrite_;
 		maxLogs = maxLogs_;
 		TryTidyUp();
-		dat = std::ofstream(fn, std::ios::app);
 	}
+	file_commit(file_commit&& r):dat(std::move(r.dat)) {
+		maxWrite = r.maxWrite;
+		maxLogs = r.maxLogs;
+		fn = r.fn;
+		totalWrite = 0;
+	}
+	file_commit(const file_commit&) = delete;
 	void operator()(string_view extra, string_view content) {
-		dat << extra;
-		dat << content << '\n';
-		totalWrite += (unsigned int)(extra.size() + content.size());
+		dat.write(extra,content,'\n');
+		totalWrite += (unsigned  int)(extra.size() + content.size());
 		if (totalWrite > maxWrite) {
-			dat.flush();
 			dat.close();
 			TryTidyUp();
-			dat = std::ofstream(fn, std::ios::app);
+			dat.open(fn);
 			totalWrite = 0;
 		}
 	}
@@ -78,7 +135,7 @@ struct file_commit {
 template <typename... TP>
 struct stacked {
 	std::tuple<TP...> data;
-	stacked(TP&&... args) noexcept : data{ std::forward<TP>(args)... } {}
+	stacked(TP&&... args) noexcept :data(std::forward<TP>(args)...) {}
 	template <size_t idx, typename... TC>
 	void _call(TC&&... args) noexcept {
 		std::get<idx>(data)(std::forward<TC>(args)...);

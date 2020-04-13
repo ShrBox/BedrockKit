@@ -1,5 +1,6 @@
 ﻿#pragma once
 #include<lbpch.h>
+//MC_COMMAND_EXTRA
 class CommandRegistry;
 class CommandOrigin;
 class CommandOutput;
@@ -47,11 +48,6 @@ public:
 		*((void**)&rv) = dlsym("?error@CommandOutput@@QEAAXAEBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@AEBV?$vector@VCommandOutputParameter@@V?$allocator@VCommandOutputParameter@@@std@@@3@@Z");
 		return (this->*rv)(a0, a1);
 	}
-	MCINLINE void addToResultList(class std::basic_string<char, struct std::char_traits<char>, class std::allocator<char>> const& a0, class Actor const& a1) {
-		void (CommandOutput::*rv)(class std::basic_string<char, struct std::char_traits<char>, class std::allocator<char>> const&, class Actor const&);
-		*((void**)&rv) = dlsym("?addToResultList@CommandOutput@@QEAAXAEBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@AEBVActor@@@Z");
-		return (this->*rv)(a0, a1);
-	}
 	MCINLINE void success(class std::basic_string<char, struct std::char_traits<char>, class std::allocator<char>> const& a0="", class std::vector<class CommandOutputParameter, class std::allocator<class CommandOutputParameter>> const& a1 = {}) {
 		void (CommandOutput::*rv)(class std::basic_string<char, struct std::char_traits<char>, class std::allocator<char>> const&, class std::vector<class CommandOutputParameter, class std::allocator<class CommandOutputParameter>> const&);
 		*((void**)&rv) = dlsym("?success@CommandOutput@@QEAAXAEBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@AEBV?$vector@VCommandOutputParameter@@V?$allocator@VCommandOutputParameter@@@std@@@3@@Z");
@@ -59,14 +55,6 @@ public:
 	}
 
 
-#if 0
-
-
-        // ??0CommandOutput@@QEAA@W4CommandOutputType@@@Z
-        // CommandOutput::CommandOutput(enum CommandOutputType)
-
-
-#endif
 	void addMessage(
 		std::string const& str) {
 		SymCall("?addMessage@CommandOutput@@AEAAXAEBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@AEBV?$vector@VCommandOutputParameter@@V?$allocator@VCommandOutputParameter@@@std@@@3@W4CommandOutputMessageType@@@Z", void, void*, string const&, std::vector<CommandOutputParameter> const&, int)(this, str, {}, 0);
@@ -207,56 +195,58 @@ public:
 	bool playerOnly;																	// 164
 	bool explicitIdSelector;															// 165
 
-
+	#ifdef MC_COMMAND_EXTRA
 	inline bool isExplicitIdSelector() const { return explicitIdSelector; }
 	inline void addNameFilter(InvertableFilter<std::string> const& filter) { namefilters.emplace_back(filter); }
 	inline void addTagFilter(InvertableFilter<std::string> const& filter) {
 		if (isExplicitIdSelector())
 			explicitIdSelector = false;
 		tagfilters.emplace_back(filter);
+		inline void setResultCount(uint64_t value) { resultCount = value; }
+		MCINLINE void addTypeFilter(struct InvertableFilter<class std::basic_string<char, struct std::char_traits<char>, class std::allocator<char>>> const& a0) {
+			void (CommandSelectorBase::*rv)(struct InvertableFilter<class std::basic_string<char, struct std::char_traits<char>, class std::allocator<char>>> const&);
+			*((void**)&rv) = dlsym("?addTypeFilter@CommandSelectorBase@@QEAAXAEBU?$InvertableFilter@V?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@@@@Z");
+			return (this->*rv)(a0);
+		}
+		MCINLINE bool compile(class CommandOrigin const& a0, class std::basic_string<char, struct std::char_traits<char>, class std::allocator<char>>& a1) {
+			bool (CommandSelectorBase::*rv)(class CommandOrigin const&, class std::basic_string<char, struct std::char_traits<char>, class std::allocator<char>>&);
+			*((void**)&rv) = dlsym("?compile@CommandSelectorBase@@QEAA_NAEBVCommandOrigin@@AEAV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@@Z");
+			return (this->*rv)(a0, a1);
+		}
+		MCINLINE void setRadiusMin(float a0) {
+			void (CommandSelectorBase::*rv)(float);
+			*((void**)&rv) = dlsym("?setRadiusMin@CommandSelectorBase@@QEAAXM@Z");
+			return (this->*rv)(a0);
+		}
+		MCINLINE bool matchType(class Actor const& a0) {
+			bool (CommandSelectorBase::*rv)(class Actor const&);
+			*((void**)&rv) = dlsym("?matchType@CommandSelectorBase@@AEBA_NAEBVActor@@@Z");
+			return (this->*rv)(a0);
+		}
+		MCINLINE bool matchTag(class Actor const& a0) {
+			bool (CommandSelectorBase::*rv)(class Actor const&);
+			*((void**)&rv) = dlsym("?matchTag@CommandSelectorBase@@AEBA_NAEBVActor@@@Z");
+			return (this->*rv)(a0);
+		}
+		MCINLINE bool filter(class CommandOrigin const& a0, class Actor& a1, float a2) {
+			bool (CommandSelectorBase::*rv)(class CommandOrigin const&, class Actor&, float);
+			*((void**)&rv) = dlsym("?filter@CommandSelectorBase@@AEBA_NAEBVCommandOrigin@@AEAVActor@@M@Z");
+			return (this->*rv)(a0, a1, a2);
+		}
+		MCINLINE void setRadiusMax(float a0) {
+			void (CommandSelectorBase::*rv)(float);
+			*((void**)&rv) = dlsym("?setRadiusMax@CommandSelectorBase@@QEAAXM@Z");
+			return (this->*rv)(a0);
+		}
+		MCINLINE bool matchName(class Actor const& a0) {
+			bool (CommandSelectorBase::*rv)(class Actor const&);
+			*((void**)&rv) = dlsym("?matchName@CommandSelectorBase@@AEBA_NAEBVActor@@@Z");
+			return (this->*rv)(a0);
+		}
 	}
+	#endif
 	inline void setIncludeDeadPlayers(bool value) { includeDeadPlayers = value; }
-	inline void setResultCount(uint64_t value) { resultCount = value; }
-	MCINLINE void addTypeFilter(struct InvertableFilter<class std::basic_string<char, struct std::char_traits<char>, class std::allocator<char>>> const& a0) {
-		void (CommandSelectorBase::*rv)(struct InvertableFilter<class std::basic_string<char, struct std::char_traits<char>, class std::allocator<char>>> const&);
-		*((void**)&rv) = dlsym("?addTypeFilter@CommandSelectorBase@@QEAAXAEBU?$InvertableFilter@V?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@@@@Z");
-		return (this->*rv)(a0);
-	}
-	MCINLINE bool compile(class CommandOrigin const& a0, class std::basic_string<char, struct std::char_traits<char>, class std::allocator<char>>& a1) {
-		bool (CommandSelectorBase::*rv)(class CommandOrigin const&, class std::basic_string<char, struct std::char_traits<char>, class std::allocator<char>>&);
-		*((void**)&rv) = dlsym("?compile@CommandSelectorBase@@QEAA_NAEBVCommandOrigin@@AEAV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@@Z");
-		return (this->*rv)(a0, a1);
-	}
-	MCINLINE void setRadiusMin(float a0) {
-		void (CommandSelectorBase::*rv)(float);
-		*((void**)&rv) = dlsym("?setRadiusMin@CommandSelectorBase@@QEAAXM@Z");
-		return (this->*rv)(a0);
-	}
-	MCINLINE bool matchType(class Actor const& a0) {
-		bool (CommandSelectorBase::*rv)(class Actor const&);
-		*((void**)&rv) = dlsym("?matchType@CommandSelectorBase@@AEBA_NAEBVActor@@@Z");
-		return (this->*rv)(a0);
-	}
-	MCINLINE bool matchTag(class Actor const& a0) {
-		bool (CommandSelectorBase::*rv)(class Actor const&);
-		*((void**)&rv) = dlsym("?matchTag@CommandSelectorBase@@AEBA_NAEBVActor@@@Z");
-		return (this->*rv)(a0);
-	}
-	MCINLINE bool filter(class CommandOrigin const& a0, class Actor& a1, float a2) {
-		bool (CommandSelectorBase::*rv)(class CommandOrigin const&, class Actor&, float);
-		*((void**)&rv) = dlsym("?filter@CommandSelectorBase@@AEBA_NAEBVCommandOrigin@@AEAVActor@@M@Z");
-		return (this->*rv)(a0, a1, a2);
-	}
-	MCINLINE void setRadiusMax(float a0) {
-		void (CommandSelectorBase::*rv)(float);
-		*((void**)&rv) = dlsym("?setRadiusMax@CommandSelectorBase@@QEAAXM@Z");
-		return (this->*rv)(a0);
-	}
-	MCINLINE bool matchName(class Actor const& a0) {
-		bool (CommandSelectorBase::*rv)(class Actor const&);
-		*((void**)&rv) = dlsym("?matchName@CommandSelectorBase@@AEBA_NAEBVActor@@@Z");
-		return (this->*rv)(a0);
-	}
+	
 	//CommandSelectorBase() {}
 	protected:
 	CommandSelectorBase(bool isPlayer) {

@@ -1,6 +1,6 @@
 ﻿#include"pch.h"
 #include"luaBindings.h"
-Logger LOG(stacked{ stdio_commit("[LUALOG] "),file_commit("lualog.log") });
+Logger LOG(stacked{stdio_commit("[LUALOG] "),file_commit("lualog.log") });
 int lb_log(lua_State* L) {
 	try {
 		int n = lua_gettop(L);

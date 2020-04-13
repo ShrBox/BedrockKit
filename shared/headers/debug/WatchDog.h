@@ -2,7 +2,7 @@
 #include<string>
 #include<api\lightbase.h>
 using std::string;
-#define TRACING_ENABLED
+//#define TRACING_ENABLED
 #ifdef TRACING_ENABLED
 void DOG_INIT();
 LBAPI unsigned int DOG_BITE(string&& e);

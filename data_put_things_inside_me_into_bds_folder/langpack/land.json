@@ -8,5 +8,6 @@
 "land.no.land.here":"这里没有领地",
 "land.no.target":"找不到指定目标",
 "land.no.perm":"你无权操作此处领地",
-"land.overlap":"领地重叠！"
+"land.overlap":"领地重叠！",
+"land.exceed":"领地数量超过限制"
 }

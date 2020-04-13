@@ -8,7 +8,8 @@ public:
 		class std::basic_string<char, struct std::char_traits<char>, class std::allocator<char>> (ItemStackBase::*rv)() const;
 		*((void**)&rv) = dlsym("?toString@ItemStackBase@@QEBA?AV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@XZ");
 		return (this->*rv)();
-	} MCINLINE bool operator!=(class ItemStackBase const& a0) const {
+	}
+	MCINLINE bool operator!=(class ItemStackBase const& a0) const {
 		bool (ItemStackBase::*rv)(class ItemStackBase const&) const;
 		*((void**)&rv) = dlsym("??9ItemStackBase@@QEBA_NAEBV0@@Z");
 		return (this->*rv)(a0);
@@ -18,26 +19,23 @@ public:
 		*((void**)&rv) = dlsym("?hasCustomHoverName@ItemStackBase@@QEBA_NXZ");
 		return (this->*rv)();
 	}
-	MCINLINE void hurtAndBreak(int a0, class Actor* a1) {
-		void (ItemStackBase::*rv)(int, class Actor*);
-		*((void**)&rv) = dlsym("?hurtAndBreak@ItemStackBase@@QEAAXHPEAVActor@@@Z");
-		return (this->*rv)(a0, a1);
-	}
 	MCINLINE void setCustomName(class std::basic_string<char, struct std::char_traits<char>, class std::allocator<char>> const& a0) {
 		void (ItemStackBase::*rv)(class std::basic_string<char, struct std::char_traits<char>, class std::allocator<char>> const&);
 		*((void**)&rv) = dlsym("?setCustomName@ItemStackBase@@QEAAXAEBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@@Z");
 		return (this->*rv)(a0);
+	}
+	#ifdef MCAPI_ITEM_EXTRA
+	MCINLINE void hurtAndBreak(int a0, class Actor* a1) {
+		void (ItemStackBase::*rv)(int, class Actor*);
+		*((void**)&rv) = dlsym("?hurtAndBreak@ItemStackBase@@QEAAXHPEAVActor@@@Z");
+		return (this->*rv)(a0, a1);
 	}
 	MCINLINE bool updateComponent(class std::basic_string<char, struct std::char_traits<char>, class std::allocator<char>> const& a0, class Json::Value const& a1) {
 		bool (ItemStackBase::*rv)(class std::basic_string<char, struct std::char_traits<char>, class std::allocator<char>> const&, class Json::Value const&);
 		*((void**)&rv) = dlsym("?updateComponent@ItemStackBase@@QEAA_NAEBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@AEBVValue@Json@@@Z");
 		return (this->*rv)(a0, a1);
 	}
-	MCINLINE short getAuxValue() const {
-		short (ItemStackBase::*rv)() const;
-		*((void**)&rv) = dlsym("?getAuxValue@ItemStackBase@@QEBAFXZ");
-		return (this->*rv)();
-	}
+	
 	MCINLINE void setRepairCost(int a0) {
 		void (ItemStackBase::*rv)(int);
 		*((void**)&rv) = dlsym("?setRepairCost@ItemStackBase@@QEAAXH@Z");
@@ -53,11 +51,7 @@ public:
 		*((void**)&rv) = dlsym("?_makeChargedItemFromUserData@ItemStackBase@@AEAAXXZ");
 		return (this->*rv)();
 	}
-	MCINLINE bool isEnchanted() const {
-		bool (ItemStackBase::*rv)() const;
-		*((void**)&rv) = dlsym("?isEnchanted@ItemStackBase@@QEBA_NXZ");
-		return (this->*rv)();
-	}
+
 	MCINLINE class std::basic_string<char, struct std::char_traits<char>, class std::allocator<char>> getDescriptionId() const {
 		class std::basic_string<char, struct std::char_traits<char>, class std::allocator<char>> (ItemStackBase::*rv)() const;
 		*((void**)&rv) = dlsym("?getDescriptionId@ItemStackBase@@QEBA?AV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@XZ");
@@ -77,11 +71,7 @@ public:
 		*((void**)&rv) = dlsym("?isDamaged@ItemStackBase@@QEBA_NXZ");
 		return (this->*rv)();
 	}
-	MCINLINE unsigned char getMaxStackSize() const {
-		unsigned char (ItemStackBase::*rv)() const;
-		*((void**)&rv) = dlsym("?getMaxStackSize@ItemStackBase@@QEBAEXZ");
-		return (this->*rv)();
-	}
+
 	MCINLINE bool matches(class ItemStackBase const& a0) const {
 		bool (ItemStackBase::*rv)(class ItemStackBase const&) const;
 		*((void**)&rv) = dlsym("?matches@ItemStackBase@@QEBA_NAEBV1@@Z");
@@ -102,11 +92,7 @@ public:
 		*((void**)&rv) = dlsym("?init@ItemStackBase@@IEAAXAEBVBlockLegacy@@H@Z");
 		return (this->*rv)(a0, a1);
 	}
-	MCINLINE short getId() const {
-		short (ItemStackBase::*rv)() const;
-		*((void**)&rv) = dlsym("?getId@ItemStackBase@@QEBAFXZ");
-		return (this->*rv)();
-	}
+
 	MCINLINE bool isExperimental() const {
 		bool (ItemStackBase::*rv)() const;
 		*((void**)&rv) = dlsym("?isExperimental@ItemStackBase@@QEBA_NXZ");
@@ -120,11 +106,6 @@ public:
 	MCINLINE void _updateCompareHashes() {
 		void (ItemStackBase::*rv)();
 		*((void**)&rv) = dlsym("?_updateCompareHashes@ItemStackBase@@AEAAXXZ");
-		return (this->*rv)();
-	}
-	MCINLINE class Item const* getItem() const {
-		class Item const* (ItemStackBase::*rv)() const;
-		*((void**)&rv) = dlsym("?getItem@ItemStackBase@@QEBAPEBVItem@@XZ");
 		return (this->*rv)();
 	}
 	MCINLINE bool isHorseArmorItem() const {
@@ -156,11 +137,7 @@ public:
 		*((void**)&rv) = dlsym("?init@ItemStackBase@@IEAAXHHH@Z");
 		return (this->*rv)(a0, a1, a2);
 	}
-	MCINLINE int getIdAux() const {
-		int (ItemStackBase::*rv)() const;
-		*((void**)&rv) = dlsym("?getIdAux@ItemStackBase@@QEBAHXZ");
-		return (this->*rv)();
-	}
+
 	MCINLINE bool hasSameUserData(class ItemStackBase const& a0) const {
 		bool (ItemStackBase::*rv)(class ItemStackBase const&) const;
 		*((void**)&rv) = dlsym("?hasSameUserData@ItemStackBase@@QEBA_NAEBV1@@Z");
@@ -171,11 +148,7 @@ public:
 		*((void**)&rv) = dlsym("?serializeComponents@ItemStackBase@@QEBAXAEAVIDataOutput@@@Z");
 		return (this->*rv)(a0);
 	}
-	MCINLINE class std::basic_string<char, struct std::char_traits<char>, class std::allocator<char>> getName() const {
-		class std::basic_string<char, struct std::char_traits<char>, class std::allocator<char>> (ItemStackBase::*rv)() const;
-		*((void**)&rv) = dlsym("?getName@ItemStackBase@@QEBA?AV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@XZ");
-		return (this->*rv)();
-	} MCINLINE bool _setItem(int a0) {
+ MCINLINE bool _setItem(int a0) {
 		bool (ItemStackBase::*rv)(int);
 		*((void**)&rv) = dlsym("?_setItem@ItemStackBase@@IEAA_NH@Z");
 		return (this->*rv)(a0);
@@ -200,11 +173,7 @@ public:
 		*((void**)&rv) = dlsym("?isStackedByData@ItemStackBase@@QEBA_NXZ");
 		return (this->*rv)();
 	}
-	MCINLINE class std::basic_string<char, struct std::char_traits<char>, class std::allocator<char>> getHoverName() const {
-		class std::basic_string<char, struct std::char_traits<char>, class std::allocator<char>> (ItemStackBase::*rv)() const;
-		*((void**)&rv) = dlsym("?getHoverName@ItemStackBase@@QEBA?AV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@XZ");
-		return (this->*rv)();
-	} MCINLINE void _read(class ReadOnlyBinaryStream& a0) {
+ MCINLINE void _read(class ReadOnlyBinaryStream& a0) {
 		void (ItemStackBase::*rv)(class ReadOnlyBinaryStream&);
 		*((void**)&rv) = dlsym("?_read@ItemStackBase@@QEAAXAEAVReadOnlyBinaryStream@@@Z");
 		return (this->*rv)(a0);
@@ -224,11 +193,7 @@ public:
 		*((void**)&rv) = dlsym("?_write@ItemStackBase@@QEBAXAEAVBinaryStream@@@Z");
 		return (this->*rv)(a0);
 	}
-	MCINLINE void setCustomLore(class std::vector<class std::basic_string<char, struct std::char_traits<char>, class std::allocator<char>>, class std::allocator<class std::basic_string<char, struct std::char_traits<char>, class std::allocator<char>>>> const& a0) {
-		void (ItemStackBase::*rv)(class std::vector<class std::basic_string<char, struct std::char_traits<char>, class std::allocator<char>>, class std::allocator<class std::basic_string<char, struct std::char_traits<char>, class std::allocator<char>>>> const&);
-		*((void**)&rv) = dlsym("?setCustomLore@ItemStackBase@@QEAAXAEBV?$vector@V?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@V?$allocator@V?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@@2@@std@@@Z");
-		return (this->*rv)(a0);
-	}
+
 	MCINLINE void set(int a0) {
 		void (ItemStackBase::*rv)(int);
 		*((void**)&rv) = dlsym("?set@ItemStackBase@@QEAAXH@Z");
@@ -249,11 +214,7 @@ public:
 		*((void**)&rv) = dlsym("?_loadComponents@ItemStackBase@@AEAAXAEBVCompoundTag@@@Z");
 		return (this->*rv)(a0);
 	}
-	MCINLINE void setNull() {
-		void (ItemStackBase::*rv)();
-		*((void**)&rv) = dlsym("?setNull@ItemStackBase@@QEAAXXZ");
-		return (this->*rv)();
-	}
+
 	MCINLINE class ItemStackBase& operator=(class ItemStackBase const& a0) {
 		class ItemStackBase& (ItemStackBase::*rv)(class ItemStackBase const&);
 		*((void**)&rv) = dlsym("??4ItemStackBase@@IEAAAEAV0@AEBV0@@Z");
@@ -268,15 +229,67 @@ public:
 		*((void**)&rv) = dlsym("?hasComponent@ItemStackBase@@QEBA_NAEBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@@Z");
 		return (this->*rv)(a0);
 	}
-	MCINLINE bool isNull() const {
-		bool (ItemStackBase::*rv)() const;
-		*((void**)&rv) = dlsym("?isNull@ItemStackBase@@QEBA_NXZ");
-		return (this->*rv)();
-	}
+
 	MCINLINE bool sameItemAndAux(class ItemStackBase const& a0) const {
 		bool (ItemStackBase::*rv)(class ItemStackBase const&) const;
 		*((void**)&rv) = dlsym("?sameItemAndAux@ItemStackBase@@QEBA_NAEBV1@@Z");
 		return (this->*rv)(a0);
+	}
+#endif
+	MCINLINE class Item const* getItem() const {
+		class Item const* (ItemStackBase::*rv)() const;
+		*((void**)&rv) = dlsym("?getItem@ItemStackBase@@QEBAPEBVItem@@XZ");
+		return (this->*rv)();
+	}
+MCINLINE short getAuxValue() const {
+		short (ItemStackBase::*rv)() const;
+		*((void**)&rv) = dlsym("?getAuxValue@ItemStackBase@@QEBAFXZ");
+		return (this->*rv)();
+	}
+	MCINLINE bool isEnchanted() const {
+		bool (ItemStackBase::*rv)() const;
+		*((void**)&rv) = dlsym("?isEnchanted@ItemStackBase@@QEBA_NXZ");
+		return (this->*rv)();
+	}
+	MCINLINE unsigned char getMaxStackSize() const {
+		unsigned char (ItemStackBase::*rv)() const;
+		*((void**)&rv) = dlsym("?getMaxStackSize@ItemStackBase@@QEBAEXZ");
+		return (this->*rv)();
+	}
+	MCINLINE short getId() const {
+		short (ItemStackBase::*rv)() const;
+		*((void**)&rv) = dlsym("?getId@ItemStackBase@@QEBAFXZ");
+		return (this->*rv)();
+	}
+	MCINLINE int getIdAux() const {
+		int (ItemStackBase::*rv)() const;
+		*((void**)&rv) = dlsym("?getIdAux@ItemStackBase@@QEBAHXZ");
+		return (this->*rv)();
+	}
+	MCINLINE class std::basic_string<char, struct std::char_traits<char>, class std::allocator<char>> getName() const {
+		class std::basic_string<char, struct std::char_traits<char>, class std::allocator<char>> (ItemStackBase::*rv)() const;
+		*((void**)&rv) = dlsym("?getName@ItemStackBase@@QEBA?AV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@XZ");
+		return (this->*rv)();
+	}
+	MCINLINE class std::basic_string<char, struct std::char_traits<char>, class std::allocator<char>> getHoverName() const {
+		class std::basic_string<char, struct std::char_traits<char>, class std::allocator<char>> (ItemStackBase::*rv)() const;
+		*((void**)&rv) = dlsym("?getHoverName@ItemStackBase@@QEBA?AV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@XZ");
+		return (this->*rv)();
+	}
+	MCINLINE void setCustomLore(class std::vector<class std::basic_string<char, struct std::char_traits<char>, class std::allocator<char>>, class std::allocator<class std::basic_string<char, struct std::char_traits<char>, class std::allocator<char>>>> const& a0) {
+		void (ItemStackBase::*rv)(class std::vector<class std::basic_string<char, struct std::char_traits<char>, class std::allocator<char>>, class std::allocator<class std::basic_string<char, struct std::char_traits<char>, class std::allocator<char>>>> const&);
+		*((void**)&rv) = dlsym("?setCustomLore@ItemStackBase@@QEAAXAEBV?$vector@V?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@V?$allocator@V?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@@2@@std@@@Z");
+		return (this->*rv)(a0);
+	}
+	MCINLINE void setNull() {
+		void (ItemStackBase::*rv)();
+		*((void**)&rv) = dlsym("?setNull@ItemStackBase@@QEAAXXZ");
+		return (this->*rv)();
+	}
+	MCINLINE bool isNull() const {
+		bool (ItemStackBase::*rv)() const;
+		*((void**)&rv) = dlsym("?isNull@ItemStackBase@@QEBA_NXZ");
+		return (this->*rv)();
 	}
 	MCINLINE class std::basic_string<char, struct std::char_traits<char>, class std::allocator<char>> getCustomName() const {
 		class std::basic_string<char, struct std::char_traits<char>, class std::allocator<char>> (ItemStackBase::*rv)() const;
@@ -321,6 +334,7 @@ class ItemEnchants (ItemStackBase::*rv)()const ; *((void**)&rv) = dlsym("?getEnc
 #include "Core.h"
 class ItemStack : public ItemStackBase {	
 public:
+	#ifdef MCAPI_ITEM_EXTRA
 	MCINLINE class ItemStack& operator=(class ItemStack const& a0) {
 		class ItemStack& (ItemStack::*rv)(class ItemStack const&);
 		*((void**)&rv) = dlsym("??4ItemStack@@QEAAAEAV0@AEBV0@@Z");
@@ -351,7 +365,7 @@ public:
 		*((void**)&rv) = dlsym("?reinit@ItemStack@@MEAAXAEBVItem@@HH@Z");
 		return (this->*rv)(a0, a1, a2);
 	}
-
+#endif
 #if 0
 //   bad fun  
 
@@ -374,6 +388,7 @@ public:
 	Item(const Item&) = delete;
 	Item& operator=(const Item&) = delete;
 	Item() = delete;
+	#ifdef MCAPI_ITEM_EXTRA
 	MCINLINE class Item& setIcon(class std::basic_string<char, struct std::char_traits<char>, class std::allocator<char>> const& a0, int a1) {
 		class Item& (Item::*rv)(class std::basic_string<char, struct std::char_traits<char>, class std::allocator<char>> const&, int);
 		*((void**)&rv) = dlsym("?setIcon@Item@@UEAAAEAV1@AEBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@H@Z");
@@ -494,11 +509,7 @@ public:
 	MCINLINE static void beginCreativeGroup(class std::basic_string<char, struct std::char_traits<char>, class std::allocator<char>> const& a0, class ItemInstance const& a1) {
 		return ((void (*)(class std::basic_string<char, struct std::char_traits<char>, class std::allocator<char>> const&, class ItemInstance const&))dlsym("?beginCreativeGroup@Item@@SAXAEBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@AEBVItemInstance@@@Z"))(a0, a1);
 	}
-	MCINLINE int getEnchantValue() const {
-		int (Item::*rv)() const;
-		*((void**)&rv) = dlsym("?getEnchantValue@Item@@UEBAHXZ");
-		return (this->*rv)();
-	}
+
 	MCINLINE class Item& setUseAnimation(enum UseAnimation a0) {
 		class Item& (Item::*rv)(enum UseAnimation);
 		*((void**)&rv) = dlsym("?setUseAnimation@Item@@UEAAAEAV1@W4UseAnimation@@@Z");
@@ -920,6 +931,12 @@ public:
 		bool (Item::*rv)(class Actor&, class ItemStack&, unsigned char const&, class BlockPos const&) const;
 		*((void**)&rv) = dlsym("?_checkUseOnPermissions@Item@@EEBA_NAEAVActor@@AEAVItemStack@@AEBEAEBVBlockPos@@@Z");
 		return (this->*rv)(a0, a1, a2, a3);
+	}
+	#endif
+	MCINLINE int getEnchantValue() const {
+		int (Item::*rv)() const;
+		*((void**)&rv) = dlsym("?getEnchantValue@Item@@UEBAHXZ");
+		return (this->*rv)();
 	}
 
 #if 0

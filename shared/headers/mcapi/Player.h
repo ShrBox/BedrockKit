@@ -6,6 +6,22 @@ public:
 	Player(const Player&) = delete;
 	Player& operator=(const Player&) = delete;
 	Player() = delete;
+	#ifdef MCAPI_PLAYER_EXTRA
+		MCINLINE void sendNetworkPacket(class Packet& a0) const {
+		void (Player::*rv)(class Packet&) const;
+		*((void**)&rv) = dlsym("?sendNetworkPacket@Player@@UEBAXAEAVPacket@@@Z");
+		return (this->*rv)(a0);
+	}
+		MCINLINE void setPlayerGameType(enum GameType a0) {
+		void (Player::*rv)(enum GameType);
+		*((void**)&rv) = dlsym("?setPlayerGameType@Player@@UEAAXW4GameType@@@Z");
+		return (this->*rv)(a0);
+	}
+	MCINLINE void setArmor(enum ArmorSlot a0, class ItemStack const& a1) {
+		void (Player::*rv)(enum ArmorSlot, class ItemStack const&);
+		*((void**)&rv) = dlsym("?setArmor@Player@@UEAAXW4ArmorSlot@@AEBVItemStack@@@Z");
+		return (this->*rv)(a0, a1);
+	}
 	MCINLINE bool isPositionRelevant(class AutomaticID<class Dimension, int> a0, class BlockPos const& a1) {
 		bool (Player::*rv)(class AutomaticID<class Dimension, int>, class BlockPos const&);
 		*((void**)&rv) = dlsym("?isPositionRelevant@Player@@UEAA_NV?$AutomaticID@VDimension@@H@@AEBVBlockPos@@@Z");
@@ -31,11 +47,7 @@ public:
 		*((void**)&rv) = dlsym("?stopSleepInBed@Player@@UEAAX_N0@Z");
 		return (this->*rv)(a0, a1);
 	}
-	MCINLINE class ItemStack const& getCarriedItem() const {
-		class ItemStack const& (Player::*rv)() const;
-		*((void**)&rv) = dlsym("?getCarriedItem@Player@@UEBAAEBVItemStack@@XZ");
-		return (this->*rv)();
-	}
+	
 	MCINLINE void startSpinAttack() {
 		void (Player::*rv)();
 		*((void**)&rv) = dlsym("?startSpinAttack@Player@@UEAAXXZ");
@@ -71,11 +83,7 @@ public:
 		*((void**)&rv) = dlsym("?_handleCarriedItemInteractText@Player@@AEAAXXZ");
 		return (this->*rv)();
 	}
-	MCINLINE unsigned int getUserId() const {
-		unsigned int (Player::*rv)() const;
-		*((void**)&rv) = dlsym("?getUserId@Player@@UEBAIXZ");
-		return (this->*rv)();
-	}
+
 	MCINLINE float getRidingHeight() {
 		float (Player::*rv)();
 		*((void**)&rv) = dlsym("?getRidingHeight@Player@@UEAAMXZ");
@@ -296,11 +304,7 @@ public:
 		*((void**)&rv) = dlsym("?displayLocalizableMessage@Player@@UEAAXAEBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@AEBV?$vector@V?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@V?$allocator@V?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@@2@@3@@Z");
 		return (this->*rv)(a0, a1);
 	}
-	MCINLINE bool canUseAbility(enum AbilitiesIndex a0) const {
-		bool (Player::*rv)(enum AbilitiesIndex) const;
-		*((void**)&rv) = dlsym("?canUseAbility@Player@@QEBA_NW4AbilitiesIndex@@@Z");
-		return (this->*rv)(a0);
-	}
+	
 	MCINLINE bool _blockUsingShield(class ActorDamageSource const& a0, float a1) {
 		bool (Player::*rv)(class ActorDamageSource const&, float);
 		*((void**)&rv) = dlsym("?_blockUsingShield@Player@@AEAA_NAEBVActorDamageSource@@M@Z");
@@ -486,11 +490,7 @@ public:
 		*((void**)&rv) = dlsym("?isCreative@Player@@UEBA_NXZ");
 		return (this->*rv)();
 	}
-	MCINLINE class EnderChestContainer* getEnderChestContainer() {
-		class EnderChestContainer* (Player::*rv)();
-		*((void**)&rv) = dlsym("?getEnderChestContainer@Player@@QEAAPEAVEnderChestContainer@@XZ");
-		return (this->*rv)();
-	}
+
 	MCINLINE bool checkBed(class BlockSource* a0, class Vec3 const* const a1) {
 		bool (Player::*rv)(class BlockSource*, class Vec3 const* const);
 		*((void**)&rv) = dlsym("?checkBed@Player@@IEAA_NPEAVBlockSource@@QEBVVec3@@@Z");
@@ -546,11 +546,7 @@ public:
 		*((void**)&rv) = dlsym("?moveSpawnView@Player@@UEAAXAEBVVec3@@@Z");
 		return (this->*rv)(a0);
 	}
-	MCINLINE bool add(class ItemStack& a0) {
-		bool (Player::*rv)(class ItemStack&);
-		*((void**)&rv) = dlsym("?add@Player@@UEAA_NAEAVItemStack@@@Z");
-		return (this->*rv)(a0);
-	}
+
 	MCINLINE void openContainer(struct ActorUniqueID const& a0) {
 		void (Player::*rv)(struct ActorUniqueID const&);
 		*((void**)&rv) = dlsym("?openContainer@Player@@UEAAXAEBUActorUniqueID@@@Z");
@@ -606,11 +602,7 @@ public:
 		*((void**)&rv) = dlsym("?getXpNeededForNextLevel@Player@@QEBAHXZ");
 		return (this->*rv)();
 	}
-	MCINLINE void setPlayerGameType(enum GameType a0) {
-		void (Player::*rv)(enum GameType);
-		*((void**)&rv) = dlsym("?setPlayerGameType@Player@@UEAAXW4GameType@@@Z");
-		return (this->*rv)(a0);
-	}
+
 	MCINLINE int tickWorld(struct Tick const& a0) {
 		int (Player::*rv)(struct Tick const&);
 		*((void**)&rv) = dlsym("?tickWorld@Player@@UEAAHAEBUTick@@@Z");
@@ -751,11 +743,7 @@ public:
 		*((void**)&rv) = dlsym("?openCommandBlock@Player@@UEAAXAEBVBlockPos@@@Z");
 		return (this->*rv)(a0);
 	}
-	MCINLINE void setArmor(enum ArmorSlot a0, class ItemStack const& a1) {
-		void (Player::*rv)(enum ArmorSlot, class ItemStack const&);
-		*((void**)&rv) = dlsym("?setArmor@Player@@UEAAXW4ArmorSlot@@AEBVItemStack@@@Z");
-		return (this->*rv)(a0, a1);
-	}
+
 	MCINLINE void openSign(class BlockPos const& a0) {
 		void (Player::*rv)(class BlockPos const&);
 		*((void**)&rv) = dlsym("?openSign@Player@@UEAAXAEBVBlockPos@@@Z");
@@ -796,16 +784,7 @@ public:
 		*((void**)&rv) = dlsym("?openLoom@Player@@UEAAXAEBVBlockPos@@@Z");
 		return (this->*rv)(a0);
 	}
-	MCINLINE void setName(class std::basic_string<char, struct std::char_traits<char>, class std::allocator<char>> const& a0) {
-		void (Player::*rv)(class std::basic_string<char, struct std::char_traits<char>, class std::allocator<char>> const&);
-		*((void**)&rv) = dlsym("?setName@Player@@UEAAXAEBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@@Z");
-		return (this->*rv)(a0);
-	}
-	MCINLINE void sendNetworkPacket(class Packet& a0) const {
-		void (Player::*rv)(class Packet&) const;
-		*((void**)&rv) = dlsym("?sendNetworkPacket@Player@@UEBAXAEAVPacket@@@Z");
-		return (this->*rv)(a0);
-	}
+	
 	MCINLINE void openCompoundCreator(class BlockPos const& a0) {
 		void (Player::*rv)(class BlockPos const&);
 		*((void**)&rv) = dlsym("?openCompoundCreator@Player@@UEAAXAEBVBlockPos@@@Z");
@@ -816,11 +795,7 @@ public:
 		*((void**)&rv) = dlsym("?getAlwaysShowNameTag@Player@@UEBA_NXZ");
 		return (this->*rv)();
 	}
-	MCINLINE bool isPlayerInitialized() const {
-		bool (Player::*rv)() const;
-		*((void**)&rv) = dlsym("?isPlayerInitialized@Player@@UEBA_NXZ");
-		return (this->*rv)();
-	}
+	
 	MCINLINE void openSmoker(class BlockPos const& a0) {
 		void (Player::*rv)(class BlockPos const&);
 		*((void**)&rv) = dlsym("?openSmoker@Player@@UEAAXAEBVBlockPos@@@Z");
@@ -995,11 +970,7 @@ public:
 		*((void**)&rv) = dlsym("?getPreviousTickSleepTimer@Player@@UEBAHXZ");
 		return (this->*rv)();
 	}
-	MCINLINE float getDestroySpeed(class Block const& a0) const {
-		float (Player::*rv)(class Block const&) const;
-		*((void**)&rv) = dlsym("?getDestroySpeed@Player@@QEBAMAEBVBlock@@@Z");
-		return (this->*rv)(a0);
-	}
+
 	MCINLINE bool _chooseSpawnPositionWithinArea() {
 		bool (Player::*rv)();
 		*((void**)&rv) = dlsym("?_chooseSpawnPositionWithinArea@Player@@IEAA_NXZ");
@@ -1045,11 +1016,7 @@ public:
 		*((void**)&rv) = dlsym("?openCartographyTable@Player@@UEAAXAEBVBlockPos@@@Z");
 		return (this->*rv)(a0);
 	}
-	MCINLINE void addExperience(int a0) {
-		void (Player::*rv)(int);
-		*((void**)&rv) = dlsym("?addExperience@Player@@UEAAXH@Z");
-		return (this->*rv)(a0);
-	}
+
 	MCINLINE void travel(float a0, float a1, float a2) {
 		void (Player::*rv)(float, float, float);
 		*((void**)&rv) = dlsym("?travel@Player@@UEAAXMMM@Z");
@@ -1079,16 +1046,8 @@ public:
 		class std::vector<class ChunkPos, class std::allocator<class ChunkPos>> const& (Player::*rv)() const;
 		*((void**)&rv) = dlsym("?getTickingOffsets@Player@@UEBAAEBV?$vector@VChunkPos@@V?$allocator@VChunkPos@@@std@@@std@@XZ");
 		return (this->*rv)();
-	} MCINLINE enum CommandPermissionLevel getCommandPermissionLevel() const {
-		enum CommandPermissionLevel (Player::*rv)() const;
-		*((void**)&rv) = dlsym("?getCommandPermissionLevel@Player@@UEBA?AW4CommandPermissionLevel@@XZ");
-		return (this->*rv)();
-	}
-	MCINLINE class ItemStack const& getSelectedItem() const {
-		class ItemStack const& (Player::*rv)() const;
-		*((void**)&rv) = dlsym("?getSelectedItem@Player@@QEBAAEBVItemStack@@XZ");
-		return (this->*rv)();
-	}
+	} 
+
 	MCINLINE void onBounceStarted(class BlockPos const& a0, class Block const& a1) {
 		void (Player::*rv)(class BlockPos const&, class Block const&);
 		*((void**)&rv) = dlsym("?onBounceStarted@Player@@MEAAXAEBVBlockPos@@AEBVBlock@@@Z");
@@ -1099,7 +1058,64 @@ public:
 		*((void**)&rv) = dlsym("?deleteContainerManager@Player@@UEAAXXZ");
 		return (this->*rv)();
 	}
+#endif
+	MCINLINE enum CommandPermissionLevel getCommandPermissionLevel() const {
+		enum CommandPermissionLevel (Player::*rv)() const;
+		*((void**)&rv) = dlsym("?getCommandPermissionLevel@Player@@UEBA?AW4CommandPermissionLevel@@XZ");
+		return (this->*rv)();
+	}
+	MCINLINE class ItemStack const& getCarriedItem() const {
+		class ItemStack const& (Player::*rv)() const;
+		*((void**)&rv) = dlsym("?getCarriedItem@Player@@UEBAAEBVItemStack@@XZ");
+		return (this->*rv)();
+	}
+	MCINLINE unsigned int getUserId() const {
+		unsigned int (Player::*rv)() const;
+		*((void**)&rv) = dlsym("?getUserId@Player@@UEBAIXZ");
+		return (this->*rv)();
+	}
+MCINLINE bool canUseAbility(enum AbilitiesIndex a0) const {
+		bool (Player::*rv)(enum AbilitiesIndex) const;
+		*((void**)&rv) = dlsym("?canUseAbility@Player@@QEBA_NW4AbilitiesIndex@@@Z");
+		return (this->*rv)(a0);
+	}
+	MCINLINE class EnderChestContainer* getEnderChestContainer() {
+		class EnderChestContainer* (Player::*rv)();
+		*((void**)&rv) = dlsym("?getEnderChestContainer@Player@@QEAAPEAVEnderChestContainer@@XZ");
+		return (this->*rv)();
+	}
+	MCINLINE bool add(class ItemStack& a0) {
+		bool (Player::*rv)(class ItemStack&);
+		*((void**)&rv) = dlsym("?add@Player@@UEAA_NAEAVItemStack@@@Z");
+		return (this->*rv)(a0);
+	}
 
+MCINLINE void setName(class std::basic_string<char, struct std::char_traits<char>, class std::allocator<char>> const& a0) {
+		void (Player::*rv)(class std::basic_string<char, struct std::char_traits<char>, class std::allocator<char>> const&);
+		*((void**)&rv) = dlsym("?setName@Player@@UEAAXAEBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@@Z");
+		return (this->*rv)(a0);
+	}
+
+MCINLINE bool isPlayerInitialized() const {
+		bool (Player::*rv)() const;
+		*((void**)&rv) = dlsym("?isPlayerInitialized@Player@@UEBA_NXZ");
+		return (this->*rv)();
+	}
+	MCINLINE float getDestroySpeed(class Block const& a0) const {
+		float (Player::*rv)(class Block const&) const;
+		*((void**)&rv) = dlsym("?getDestroySpeed@Player@@QEBAMAEBVBlock@@@Z");
+		return (this->*rv)(a0);
+	}
+	MCINLINE void addExperience(int a0) {
+		void (Player::*rv)(int);
+		*((void**)&rv) = dlsym("?addExperience@Player@@UEAAXH@Z");
+		return (this->*rv)(a0);
+	}
+	MCINLINE class ItemStack const& getSelectedItem() const {
+		class ItemStack const& (Player::*rv)() const;
+		*((void**)&rv) = dlsym("?getSelectedItem@Player@@QEBAAEBVItemStack@@XZ");
+		return (this->*rv)();
+	}
 #if 0
 	MCINLINE  class std::vector<class ItemStack const *,class std::allocator<class ItemStack const *> >  getAllEquipment()const {
  class std::vector<class ItemStack const *,class std::allocator<class ItemStack const *> > (Player::*rv)()const ; *((void**)&rv) = dlsym("?getAllEquipment@Player@@UEBA?AV?$vector@PEBVItemStack@@V?$allocator@PEBVItemStack@@@std@@@std@@XZ"); return (this->*rv)();}
@@ -1128,6 +1144,7 @@ public:
 	ServerPlayer(const ServerPlayer&) = delete;
 	ServerPlayer& operator=(const ServerPlayer&) = delete;
 	ServerPlayer() = delete;
+	#ifdef MCAPI_PLAYER_EXTRA
 	MCINLINE void openDispenser(class BlockPos const& a0, bool a1) {
 		void (ServerPlayer::*rv)(class BlockPos const&, bool);
 		*((void**)&rv) = dlsym("?openDispenser@ServerPlayer@@UEAAXAEBVBlockPos@@_N@Z");
@@ -1253,11 +1270,7 @@ public:
 		*((void**)&rv) = dlsym("?openInventory@ServerPlayer@@UEAAXXZ");
 		return (this->*rv)();
 	}
-	MCINLINE void sendMobEffectPackets() {
-		void (ServerPlayer::*rv)();
-		*((void**)&rv) = dlsym("?sendMobEffectPackets@ServerPlayer@@QEAAXXZ");
-		return (this->*rv)();
-	}
+	
 	MCINLINE bool isHostingPlayer() const {
 		bool (ServerPlayer::*rv)() const;
 		*((void**)&rv) = dlsym("?isHostingPlayer@ServerPlayer@@UEBA_NXZ");
@@ -1303,11 +1316,7 @@ public:
 		*((void**)&rv) = dlsym("?openLabTable@ServerPlayer@@UEAAXAEBVBlockPos@@@Z");
 		return (this->*rv)(a0);
 	}
-	MCINLINE void setPermissions(enum CommandPermissionLevel a0) {
-		void (ServerPlayer::*rv)(enum CommandPermissionLevel);
-		*((void**)&rv) = dlsym("?setPermissions@ServerPlayer@@UEAAXW4CommandPermissionLevel@@@Z");
-		return (this->*rv)(a0);
-	}
+	
 	MCINLINE bool isValidTarget(class Actor* a0) const {
 		bool (ServerPlayer::*rv)(class Actor*) const;
 		*((void**)&rv) = dlsym("?isValidTarget@ServerPlayer@@UEBA_NPEAVActor@@@Z");
@@ -1358,11 +1367,7 @@ public:
 		*((void**)&rv) = dlsym("?openCommandBlock@ServerPlayer@@UEAAXAEBVBlockPos@@@Z");
 		return (this->*rv)(a0);
 	}
-	MCINLINE void sendNetworkPacket(class Packet& a0) const {
-		void (ServerPlayer::*rv)(class Packet&) const;
-		*((void**)&rv) = dlsym("?sendNetworkPacket@ServerPlayer@@UEBAXAEAVPacket@@@Z");
-		return (this->*rv)(a0);
-	}
+	
 	MCINLINE void onSuspension() {
 		void (ServerPlayer::*rv)();
 		*((void**)&rv) = dlsym("?onSuspension@ServerPlayer@@UEAAXXZ");
@@ -1428,11 +1433,7 @@ public:
 		*((void**)&rv) = dlsym("?displayLocalizableMessage@ServerPlayer@@UEAAXAEBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@AEBV?$vector@V?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@V?$allocator@V?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@@2@@3@@Z");
 		return (this->*rv)(a0, a1);
 	}
-	MCINLINE void setArmor(enum ArmorSlot a0, class ItemStack const& a1) {
-		void (ServerPlayer::*rv)(enum ArmorSlot, class ItemStack const&);
-		*((void**)&rv) = dlsym("?setArmor@ServerPlayer@@UEAAXW4ArmorSlot@@AEBVItemStack@@@Z");
-		return (this->*rv)(a0, a1);
-	}
+
 	MCINLINE void _scanForNearbyActors() {
 		void (ServerPlayer::*rv)();
 		*((void**)&rv) = dlsym("?_scanForNearbyActors@ServerPlayer@@AEAAXXZ");
@@ -1453,11 +1454,7 @@ public:
 		*((void**)&rv) = dlsym("?hurtArmor@ServerPlayer@@UEAAXH@Z");
 		return (this->*rv)(a0);
 	}
-	MCINLINE void setPlayerGameType(enum GameType a0) {
-		void (ServerPlayer::*rv)(enum GameType);
-		*((void**)&rv) = dlsym("?setPlayerGameType@ServerPlayer@@UEAAXW4GameType@@@Z");
-		return (this->*rv)(a0);
-	}
+
 	MCINLINE void setContainerData(class IContainerManager& a0, int a1, int a2) {
 		void (ServerPlayer::*rv)(class IContainerManager&, int, int);
 		*((void**)&rv) = dlsym("?setContainerData@ServerPlayer@@UEAAXAEAVIContainerManager@@HH@Z");
@@ -1533,11 +1530,7 @@ public:
 		*((void**)&rv) = dlsym("?_updateNearbyActors@ServerPlayer@@AEAAXXZ");
 		return (this->*rv)();
 	}
-	MCINLINE void sendInventory(bool a0) {
-		void (ServerPlayer::*rv)(bool);
-		*((void**)&rv) = dlsym("?sendInventory@ServerPlayer@@UEAAX_N@Z");
-		return (this->*rv)(a0);
-	}
+
 	MCINLINE unsigned int findClientChunkRadius(unsigned int a0) const {
 		unsigned int (ServerPlayer::*rv)(unsigned int) const;
 		*((void**)&rv) = dlsym("?findClientChunkRadius@ServerPlayer@@QEBAII@Z");
@@ -1553,7 +1546,37 @@ public:
 		*((void**)&rv) = dlsym("?deleteContainerManager@ServerPlayer@@UEAAXXZ");
 		return (this->*rv)();
 	}
-
+#endif
+MCINLINE void sendMobEffectPackets() {
+		void (ServerPlayer::*rv)();
+		*((void**)&rv) = dlsym("?sendMobEffectPackets@ServerPlayer@@QEAAXXZ");
+		return (this->*rv)();
+	}
+MCINLINE void setPermissions(enum CommandPermissionLevel a0) {
+		void (ServerPlayer::*rv)(enum CommandPermissionLevel);
+		*((void**)&rv) = dlsym("?setPermissions@ServerPlayer@@UEAAXW4CommandPermissionLevel@@@Z");
+		return (this->*rv)(a0);
+	}
+MCINLINE void sendNetworkPacket(class Packet& a0) const {
+		void (ServerPlayer::*rv)(class Packet&) const;
+		*((void**)&rv) = dlsym("?sendNetworkPacket@ServerPlayer@@UEBAXAEAVPacket@@@Z");
+		return (this->*rv)(a0);
+	}
+	MCINLINE void setArmor(enum ArmorSlot a0, class ItemStack const& a1) {
+		void (ServerPlayer::*rv)(enum ArmorSlot, class ItemStack const&);
+		*((void**)&rv) = dlsym("?setArmor@ServerPlayer@@UEAAXW4ArmorSlot@@AEBVItemStack@@@Z");
+		return (this->*rv)(a0, a1);
+	}
+	MCINLINE void setPlayerGameType(enum GameType a0) {
+		void (ServerPlayer::*rv)(enum GameType);
+		*((void**)&rv) = dlsym("?setPlayerGameType@ServerPlayer@@UEAAXW4GameType@@@Z");
+		return (this->*rv)(a0);
+	}
+	MCINLINE void sendInventory(bool a0) {
+		void (ServerPlayer::*rv)(bool);
+		*((void**)&rv) = dlsym("?sendInventory@ServerPlayer@@UEAAX_N@Z");
+		return (this->*rv)(a0);
+	}
 #if 0
 	MCINLINE void  _setContainerManager(class std::shared_ptr<class IContainerManager> a0){
 void (ServerPlayer::*rv)(class std::shared_ptr<class IContainerManager>); *((void**)&rv) = dlsym("?_setContainerManager@ServerPlayer@@AEAAXV?$shared_ptr@VIContainerManager@@@std@@@Z"); return (this->*rv)(a0);}

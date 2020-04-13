@@ -4,7 +4,7 @@
 #include "pch.h"
 
 void InitExplodeProtect();
-
+bool NOFIXBDS_BONEMEAL_BUG;
 Logger<stacked<stdio_commit, file_commit>> LOG(stacked{ stdio_commit{"[BH] "},file_commit("bdx.log",6,2*1024*1024) });
 bool EXP_PLAY;
 unordered_map<int, string> CMDMAP;
@@ -15,7 +15,7 @@ vector<taskid_t> TASKS;
 std::unordered_set<short> logItems,banItems;
 int explosion_land_dist;
 bool NO_EXPLOSION;
-
+static bool StartGamePacketMod;
 void loadCfg() {
 	try {
 		CMDMAP.clear();
@@ -26,12 +26,14 @@ void loadCfg() {
 		ConfigJReader jr("config/helper.json");
 		jr.bind("force_enable_expplay", EXP_PLAY,false);
 		jr.bind("CMDMAP", CMDMAP);
-		jr.bind("enable_ability", regABILITY);
+		jr.bind("force_enable_ability", regABILITY,false);
 		jr.bind("fix_crash_bed_explode", fix_crash_bed_explode, false);
 		jr.bind("FIX_PUSH_CHEST", FIX_PUSH_CHEST, false);
 		jr.bind("FAKE_SEED", FAKE_SEED, 114514);
 		jr.bind("explosion_land_dist", explosion_land_dist, -1);
 		jr.bind("NO_EXPLOSION", NO_EXPLOSION, false);
+		//jr.bind("StartGamePacketMod", StartGamePacketMod, false);
+		jr.bind("NOFIXBDS_BONEMEAL_BUG",NOFIXBDS_BONEMEAL_BUG,false);
 		vector<string> Timers;
 		jr.bind("Timers", Timers, {});
 		vector<int> items;
@@ -43,7 +45,7 @@ void loadCfg() {
 		jr.bind("banItems", items, {});
 		for (auto i : items) banItems.insert(i);
 		if (EXP_PLAY) {
-			LOG("EXP Play mode is BUGGY!!!");
+			LOG("\n\nEXP Play mode is BUGGY!!!\n\n");
 		}
 		for (auto& i : Timers) {
 			char _luabuf[256];
@@ -299,10 +301,7 @@ void entry() {
 		}
 	});
 	addListener([](LevelExplodeEvent& ev) {
-		if (!ev.exp.cause && EXP_PLAY) {
-			ev.setCancelled();
-		}
-		if (fix_crash_bed_explode) {
+		if ((fix_crash_bed_explode || EXP_PLAY) && ev.exp.bs.getDim().getID()==2 /*ender*/) {
 			ev.setCancelled();
 		}
 	});
@@ -406,4 +405,9 @@ THook(void*, "?executeFull@InventoryTransaction@@QEBA?AW4InventoryTransactionErr
 		if (CheckItemTrans(thi, WPlayer{ sp }.getName())) return nullptr;
 	}
 	return original(thi, sp, unk);
+}
+THook(bool,"?isSelectorExpansionAllowed@ActorCommandOrigin@@UEBA_NXZ",CommandOrigin& ori){
+	auto p=MakeWP(ori);
+	if(!p.set) return original(ori);
+	return p.val().getPermLvl()>0;
 }

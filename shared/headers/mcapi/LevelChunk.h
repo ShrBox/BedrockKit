@@ -5,6 +5,7 @@ public:
 	LevelChunk(const LevelChunk&) = delete;
 	LevelChunk& operator=(const LevelChunk&) = delete;
 	LevelChunk() = delete;
+	#ifdef MCAPI_LEVELCHUNK_EXTRA
 	MCINLINE struct SubChunk& _createSubChunk(unsigned __int64 a0, bool a1, enum SubChunkInitMode a2) {
 		struct SubChunk& (LevelChunk::*rv)(unsigned __int64, bool, enum SubChunkInitMode);
 		*((void**)&rv) = dlsym("?_createSubChunk@LevelChunk@@IEAAAEAUSubChunk@@_K_NW4SubChunkInitMode@@@Z");
@@ -220,6 +221,7 @@ public:
 		*((void**)&rv) = dlsym("??4LevelChunk@@QEAAAEAV0@$$QEAV0@@Z");
 		return (this->*rv)(std::forward<LevelChunk>(a0));
 	}
+#endif
 
 #if 0
 	MCINLINE void  _placeBlockEntity(class std::shared_ptr<class BlockActor> a0){

@@ -3,11 +3,12 @@
 #include<string_view>
 #include<type_traits>
 #include<streambuf>
-#include <fstream>
+#include<fstream>
 using std::string, std::string_view;
 static inline string ifs2str(std::ifstream& ifs) {
 	return { (std::istreambuf_iterator<char>(ifs)), std::istreambuf_iterator<char>() };
 }
+
 template<typename T>
 static inline auto S(T&& x) {
 	using DT = std::decay_t<T>;

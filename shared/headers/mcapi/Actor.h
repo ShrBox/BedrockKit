@@ -1,11 +1,13 @@
 ﻿#pragma once
 #include "Core.h"
+//MCAPI_ACTOR_EXTRA
 class Actor {
 public:
 	enum InitializationMethod:int;
 	Actor(const Actor&) = delete;
 	Actor& operator=(const Actor&) = delete;
 	Actor() = delete;
+	#ifdef MCAPI_ACTOR_EXTRA
 	MCINLINE class Vec3 getAttachPos(enum ActorLocation a0, float a1) const {
 		class Vec3 (Actor::*rv)(enum ActorLocation, float) const;
 		*((void**)&rv) = dlsym("?getAttachPos@Actor@@UEBA?AVVec3@@W4ActorLocation@@M@Z");
@@ -26,11 +28,7 @@ public:
 		*((void**)&rv) = dlsym("?setSeatDescription@Actor@@QEAAXAEBVVec3@@AEBUSeatDescription@@@Z");
 		return (this->*rv)(a0, a1);
 	}
-	MCINLINE void setOnFire(int a0) {
-		void (Actor::*rv)(int);
-		*((void**)&rv) = dlsym("?setOnFire@Actor@@UEAAXH@Z");
-		return (this->*rv)(a0);
-	}
+	
 	MCINLINE float getCameraOffset() const {
 		float (Actor::*rv)() const;
 		*((void**)&rv) = dlsym("?getCameraOffset@Actor@@UEBAMXZ");
@@ -71,11 +69,6 @@ public:
 		*((void**)&rv) = dlsym("?hurt@Actor@@QEAA_NAEBVActorDamageSource@@H_N1@Z");
 		return (this->*rv)(a0, a1, a2, a3);
 	}
-	MCINLINE class Player* getPlayerOwner() const {
-		class Player* (Actor::*rv)() const;
-		*((void**)&rv) = dlsym("?getPlayerOwner@Actor@@QEBAPEAVPlayer@@XZ");
-		return (this->*rv)();
-	}
 	MCINLINE bool canDestroyBlock(class Block const& a0) const {
 		bool (Actor::*rv)(class Block const&) const;
 		*((void**)&rv) = dlsym("?canDestroyBlock@Actor@@UEBA_NAEBVBlock@@@Z");
@@ -111,11 +104,7 @@ public:
 		*((void**)&rv) = dlsym("?setCanFly@Actor@@QEAAX_N@Z");
 		return (this->*rv)(a0);
 	}
-	MCINLINE bool isInWater() const {
-		bool (Actor::*rv)() const;
-		*((void**)&rv) = dlsym("?isInWater@Actor@@UEBA_NXZ");
-		return (this->*rv)();
-	}
+
 	MCINLINE void setAuxValue(int a0) {
 		void (Actor::*rv)(int);
 		*((void**)&rv) = dlsym("?setAuxValue@Actor@@UEAAXH@Z");
@@ -266,11 +255,7 @@ public:
 		*((void**)&rv) = dlsym("?isSneaking@Actor@@UEBA_NXZ");
 		return (this->*rv)();
 	}
-	MCINLINE bool isInWall() const {
-		bool (Actor::*rv)() const;
-		*((void**)&rv) = dlsym("?isInWall@Actor@@UEBA_NXZ");
-		return (this->*rv)();
-	}
+
 	MCINLINE class std::basic_string<char, struct std::char_traits<char>, class std::allocator<char>> getFormattedNameTag() const {
 		class std::basic_string<char, struct std::char_traits<char>, class std::allocator<char>> (Actor::*rv)() const;
 		*((void**)&rv) = dlsym("?getFormattedNameTag@Actor@@UEBA?AV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@XZ");
@@ -340,11 +325,7 @@ public:
 		*((void**)&rv) = dlsym("?calculateAttackDamage@Actor@@QEAAHAEAV1@@Z");
 		return (this->*rv)(a0);
 	}
-	MCINLINE void setSize(float a0, float a1) {
-		void (Actor::*rv)(float, float);
-		*((void**)&rv) = dlsym("?setSize@Actor@@UEAAXMM@Z");
-		return (this->*rv)(a0, a1);
-	}
+
 	MCINLINE void setPos(class Vec3 const& a0) {
 		void (Actor::*rv)(class Vec3 const&);
 		*((void**)&rv) = dlsym("?setPos@Actor@@UEAAXAEBVVec3@@@Z");
@@ -360,11 +341,7 @@ public:
 		*((void**)&rv) = dlsym("?getInterpolatedHeadRot@Actor@@UEBAMM@Z");
 		return (this->*rv)(a0);
 	}
-	MCINLINE class ItemStack const& getCarriedItem() const {
-		class ItemStack const& (Actor::*rv)() const;
-		*((void**)&rv) = dlsym("?getCarriedItem@Actor@@UEBAAEBVItemStack@@XZ");
-		return (this->*rv)();
-	}
+
 	MCINLINE void filterFormattedNameTag(class UIProfanityContext const& a0) {
 		void (Actor::*rv)(class UIProfanityContext const&);
 		*((void**)&rv) = dlsym("?filterFormattedNameTag@Actor@@UEAAXAEBVUIProfanityContext@@@Z");
@@ -415,11 +392,7 @@ public:
 		*((void**)&rv) = dlsym("?setVariant@Actor@@QEAAXH@Z");
 		return (this->*rv)(a0);
 	}
-	MCINLINE bool add(class ItemStack& a0) {
-		bool (Actor::*rv)(class ItemStack&);
-		*((void**)&rv) = dlsym("?add@Actor@@UEAA_NAEAVItemStack@@@Z");
-		return (this->*rv)(a0);
-	}
+
 	MCINLINE class ITickingArea* getTickingArea() {
 		class ITickingArea* (Actor::*rv)();
 		*((void**)&rv) = dlsym("?getTickingArea@Actor@@QEAAPEAVITickingArea@@XZ");
@@ -590,10 +563,10 @@ public:
 		*((void**)&rv) = dlsym("?reloadHardcoded@Actor@@MEAAXW4InitializationMethod@1@AEBVVariantParameterList@@@Z");
 		return (this->*rv)(a0, a1);
 	}
-	MCINLINE bool addTag(class std::basic_string<char, struct std::char_traits<char>, class std::allocator<char>> const& a0) {
-		bool (Actor::*rv)(class std::basic_string<char, struct std::char_traits<char>, class std::allocator<char>> const&);
-		*((void**)&rv) = dlsym("?addTag@Actor@@QEAA_NAEBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@@Z");
-		return (this->*rv)(a0);
+	MCINLINE void setSize(float a0, float a1) {
+		void (Actor::*rv)(float, float);
+		*((void**)&rv) = dlsym("?setSize@Actor@@UEAAXMM@Z");
+		return (this->*rv)(a0, a1);
 	}
 	MCINLINE void checkBlockCollisions() {
 		void (Actor::*rv)();
@@ -639,11 +612,7 @@ public:
 		*((void**)&rv) = dlsym("?spawnTrailBubbles@Actor@@MEAAXXZ");
 		return (this->*rv)();
 	}
-	MCINLINE struct ActorUniqueID const& getUniqueID() const {
-		struct ActorUniqueID const& (Actor::*rv)() const;
-		*((void**)&rv) = dlsym("?getUniqueID@Actor@@QEBAAEBUActorUniqueID@@XZ");
-		return (this->*rv)();
-	}
+
 	MCINLINE float getRidingHeight() {
 		float (Actor::*rv)();
 		*((void**)&rv) = dlsym("?getRidingHeight@Actor@@UEAAMXZ");
@@ -1131,7 +1100,8 @@ public:
 		class AutomaticID<class Dimension, int> (Actor::*rv)() const;
 		*((void**)&rv) = dlsym("?getDimensionId@Actor@@UEBA?AV?$AutomaticID@VDimension@@H@@XZ");
 		return (this->*rv)();
-	} MCINLINE void _sendDirtyActorData() {
+	} 
+	MCINLINE void _sendDirtyActorData() {
 		void (Actor::*rv)();
 		*((void**)&rv) = dlsym("?_sendDirtyActorData@Actor@@QEAAXXZ");
 		return (this->*rv)();
@@ -1361,11 +1331,7 @@ public:
 		*((void**)&rv) = dlsym("?getColor2@Actor@@QEBA?AW4PaletteColor@@XZ");
 		return (this->*rv)();
 	}
-	MCINLINE void setSitting(bool a0) {
-		void (Actor::*rv)(bool);
-		*((void**)&rv) = dlsym("?setSitting@Actor@@UEAAX_N@Z");
-		return (this->*rv)(a0);
-	}
+
 	MCINLINE void pickUpItem(class ItemActor& a0, int a1) {
 		void (Actor::*rv)(class ItemActor&, int);
 		*((void**)&rv) = dlsym("?pickUpItem@Actor@@QEAAXAEAVItemActor@@H@Z");
@@ -1396,11 +1362,7 @@ public:
 		*((void**)&rv) = dlsym("?setTradingPlayer@Actor@@QEAAXPEAVPlayer@@@Z");
 		return (this->*rv)(a0);
 	}
-	MCINLINE class Vec3 const& getPosOld() const {
-		class Vec3 const& (Actor::*rv)() const;
-		*((void**)&rv) = dlsym("?getPosOld@Actor@@UEBAAEBVVec3@@XZ");
-		return (this->*rv)();
-	}
+
 	MCINLINE void feed(int a0) {
 		void (Actor::*rv)(int);
 		*((void**)&rv) = dlsym("?feed@Actor@@UEAAXH@Z");
@@ -1471,11 +1433,7 @@ public:
 		*((void**)&rv) = dlsym("?_manageRiders@Actor@@AEAAXAEAVBlockSource@@@Z");
 		return (this->*rv)(a0);
 	}
-	MCINLINE class std::basic_string<char, struct std::char_traits<char>, class std::allocator<char>> const& getNameTag() const {
-		class std::basic_string<char, struct std::char_traits<char>, class std::allocator<char>> const& (Actor::*rv)() const;
-		*((void**)&rv) = dlsym("?getNameTag@Actor@@UEBAAEBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@XZ");
-		return (this->*rv)();
-	} MCINLINE int getControllingSeat() {
+ MCINLINE int getControllingSeat() {
 		int (Actor::*rv)();
 		*((void**)&rv) = dlsym("?getControllingSeat@Actor@@QEAAHXZ");
 		return (this->*rv)();
@@ -1495,11 +1453,7 @@ public:
 		*((void**)&rv) = dlsym("?canBeginOrContinueClimbingLadder@Actor@@QEBA_N_N@Z");
 		return (this->*rv)(a0);
 	}
-	MCINLINE void setArmor(enum ArmorSlot a0, class ItemStack const& a1) {
-		void (Actor::*rv)(enum ArmorSlot, class ItemStack const&);
-		*((void**)&rv) = dlsym("?setArmor@Actor@@UEAAXW4ArmorSlot@@AEBVItemStack@@@Z");
-		return (this->*rv)(a0, a1);
-	}
+
 	MCINLINE class ItemActor* spawnAtLocation(class ItemStack const& a0, float a1) {
 		class ItemActor* (Actor::*rv)(class ItemStack const&, float);
 		*((void**)&rv) = dlsym("?spawnAtLocation@Actor@@UEAAPEAVItemActor@@AEBVItemStack@@M@Z");
@@ -1555,26 +1509,14 @@ public:
 		*((void**)&rv) = dlsym("?getRiderIndex@Actor@@QEBAHAEAV1@@Z");
 		return (this->*rv)(a0);
 	}
-	MCINLINE enum ActorType getEntityTypeId() const {
-		enum ActorType (Actor::*rv)() const;
-		*((void**)&rv) = dlsym("?getEntityTypeId@Actor@@UEBA?AW4ActorType@@XZ");
-		return (this->*rv)();
-	}
-	MCINLINE void setCarriedItem(class ItemStack const& a0) {
-		void (Actor::*rv)(class ItemStack const&);
-		*((void**)&rv) = dlsym("?setCarriedItem@Actor@@UEAAXAEBVItemStack@@@Z");
-		return (this->*rv)(a0);
-	}
+
+
 	MCINLINE bool isRider(class Actor const& a0) const {
 		bool (Actor::*rv)(class Actor const&) const;
 		*((void**)&rv) = dlsym("?isRider@Actor@@QEBA_NAEBV1@@Z");
 		return (this->*rv)(a0);
 	}
-	MCINLINE class Vec3 const& getPos() const {
-		class Vec3 const& (Actor::*rv)() const;
-		*((void**)&rv) = dlsym("?getPos@Actor@@UEBAAEBVVec3@@XZ");
-		return (this->*rv)();
-	}
+
 	MCINLINE bool _hurt(class ActorDamageSource const& a0, int a1, bool a2, bool a3) {
 		bool (Actor::*rv)(class ActorDamageSource const&, int, bool, bool);
 		*((void**)&rv) = dlsym("?_hurt@Actor@@MEAA_NAEBVActorDamageSource@@H_N1@Z");
@@ -1695,11 +1637,7 @@ public:
 		*((void**)&rv) = dlsym("?getBrightness@Actor@@UEBAMM@Z");
 		return (this->*rv)(a0);
 	}
-	MCINLINE struct ActorUniqueID const getOwnerId() const {
-		struct ActorUniqueID const (Actor::*rv)() const;
-		*((void**)&rv) = dlsym("?getOwnerId@Actor@@QEBA?BUActorUniqueID@@XZ");
-		return (this->*rv)();
-	}
+
 	MCINLINE int getVariant() const {
 		int (Actor::*rv)() const;
 		*((void**)&rv) = dlsym("?getVariant@Actor@@QEBAHXZ");
@@ -1715,11 +1653,7 @@ public:
 		*((void**)&rv) = dlsym("?isInWaterOrRain@Actor@@UEBA_NXZ");
 		return (this->*rv)();
 	}
-	MCINLINE void setNameTag(class std::basic_string<char, struct std::char_traits<char>, class std::allocator<char>> const& a0) {
-		void (Actor::*rv)(class std::basic_string<char, struct std::char_traits<char>, class std::allocator<char>> const&);
-		*((void**)&rv) = dlsym("?setNameTag@Actor@@UEAAXAEBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@@Z");
-		return (this->*rv)(a0);
-	}
+
 	MCINLINE bool isSkyLit(float a0) {
 		bool (Actor::*rv)(float);
 		*((void**)&rv) = dlsym("?isSkyLit@Actor@@UEAA_NM@Z");
@@ -1789,11 +1723,7 @@ public:
 		*((void**)&rv) = dlsym("?onEffectRemoved@Actor@@UEAAXAEAVMobEffectInstance@@@Z");
 		return (this->*rv)(a0);
 	}
-	MCINLINE class Mob* getOwner() const {
-		class Mob* (Actor::*rv)() const;
-		*((void**)&rv) = dlsym("?getOwner@Actor@@QEBAPEAVMob@@XZ");
-		return (this->*rv)();
-	}
+
 	MCINLINE void spawnTamingParticles(bool a0) {
 		void (Actor::*rv)(bool);
 		*((void**)&rv) = dlsym("?spawnTamingParticles@Actor@@QEAAX_N@Z");
@@ -1804,17 +1734,98 @@ public:
 		*((void**)&rv) = dlsym("?handleFallDistanceOnServer@Actor@@UEAAXM_N@Z");
 		return (this->*rv)(a0, a1);
 	}
-	MCINLINE class MobEffectInstance const* getEffect(class MobEffect const& a0) const {
-		class MobEffectInstance const* (Actor::*rv)(class MobEffect const&)const;
-		*((void**)&rv) = dlsym("?getEffect@Actor@@QEBAPEBVMobEffectInstance@@AEBVMobEffect@@@Z");
-		return (this->*rv)(a0);
-	}
+
 	MCINLINE void setCanPowerJump(bool a0) {
 		void (Actor::*rv)(bool);
 		*((void**)&rv) = dlsym("?setCanPowerJump@Actor@@UEAAX_N@Z");
 		return (this->*rv)(a0);
 	}
-
+#endif
+MCINLINE void setOnFire(int a0) {
+		void (Actor::*rv)(int);
+		*((void**)&rv) = dlsym("?setOnFire@Actor@@UEAAXH@Z");
+		return (this->*rv)(a0);
+	}
+	MCINLINE class Player* getPlayerOwner() const {
+		class Player* (Actor::*rv)() const;
+		*((void**)&rv) = dlsym("?getPlayerOwner@Actor@@QEBAPEAVPlayer@@XZ");
+		return (this->*rv)();
+	}
+	MCINLINE bool isInWater() const {
+		bool (Actor::*rv)() const;
+		*((void**)&rv) = dlsym("?isInWater@Actor@@UEBA_NXZ");
+		return (this->*rv)();
+	}
+	MCINLINE bool isInWall() const {
+		bool (Actor::*rv)() const;
+		*((void**)&rv) = dlsym("?isInWall@Actor@@UEBA_NXZ");
+		return (this->*rv)();
+	}
+	MCINLINE class ItemStack const& getCarriedItem() const {
+		class ItemStack const& (Actor::*rv)() const;
+		*((void**)&rv) = dlsym("?getCarriedItem@Actor@@UEBAAEBVItemStack@@XZ");
+		return (this->*rv)();
+	}
+	MCINLINE bool add(class ItemStack& a0) {
+		bool (Actor::*rv)(class ItemStack&);
+		*((void**)&rv) = dlsym("?add@Actor@@UEAA_NAEAVItemStack@@@Z");
+		return (this->*rv)(a0);
+	}
+	MCINLINE bool addTag(class std::basic_string<char, struct std::char_traits<char>, class std::allocator<char>> const& a0) {
+		bool (Actor::*rv)(class std::basic_string<char, struct std::char_traits<char>, class std::allocator<char>> const&);
+		*((void**)&rv) = dlsym("?addTag@Actor@@QEAA_NAEBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@@Z");
+		return (this->*rv)(a0);
+	}
+	MCINLINE struct ActorUniqueID const& getUniqueID() const {
+		struct ActorUniqueID const& (Actor::*rv)() const;
+		*((void**)&rv) = dlsym("?getUniqueID@Actor@@QEBAAEBUActorUniqueID@@XZ");
+		return (this->*rv)();
+	}
+	MCINLINE class AutomaticID<class Dimension, int> getDimensionId() const {
+		class AutomaticID<class Dimension, int> (Actor::*rv)() const;
+		*((void**)&rv) = dlsym("?getDimensionId@Actor@@UEBA?AV?$AutomaticID@VDimension@@H@@XZ");
+		return (this->*rv)();
+	} 
+	MCINLINE void setSitting(bool a0) {
+		void (Actor::*rv)(bool);
+		*((void**)&rv) = dlsym("?setSitting@Actor@@UEAAX_N@Z");
+		return (this->*rv)(a0);
+	}
+	MCINLINE class Vec3 const& getPos() const {
+		class Vec3 const& (Actor::*rv)() const;
+		*((void**)&rv) = dlsym("?getPos@Actor@@UEBAAEBVVec3@@XZ");
+		return (this->*rv)();
+	}
+	MCINLINE void setCarriedItem(class ItemStack const& a0) {
+		void (Actor::*rv)(class ItemStack const&);
+		*((void**)&rv) = dlsym("?setCarriedItem@Actor@@UEAAXAEBVItemStack@@@Z");
+		return (this->*rv)(a0);
+	}
+	MCINLINE enum ActorType getEntityTypeId() const {
+		enum ActorType (Actor::*rv)() const;
+		*((void**)&rv) = dlsym("?getEntityTypeId@Actor@@UEBA?AW4ActorType@@XZ");
+		return (this->*rv)();
+	}
+	MCINLINE class std::basic_string<char, struct std::char_traits<char>, class std::allocator<char>> const& getNameTag() const {
+		class std::basic_string<char, struct std::char_traits<char>, class std::allocator<char>> const& (Actor::*rv)() const;
+		*((void**)&rv) = dlsym("?getNameTag@Actor@@UEBAAEBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@XZ");
+		return (this->*rv)();
+	}
+	MCINLINE class MobEffectInstance const* getEffect(class MobEffect const& a0) const {
+		class MobEffectInstance const* (Actor::*rv)(class MobEffect const&)const;
+		*((void**)&rv) = dlsym("?getEffect@Actor@@QEBAPEBVMobEffectInstance@@AEBVMobEffect@@@Z");
+		return (this->*rv)(a0);
+	}
+	MCINLINE void setNameTag(class std::basic_string<char, struct std::char_traits<char>, class std::allocator<char>> const& a0) {
+		void (Actor::*rv)(class std::basic_string<char, struct std::char_traits<char>, class std::allocator<char>> const&);
+		*((void**)&rv) = dlsym("?setNameTag@Actor@@UEAAXAEBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@@Z");
+		return (this->*rv)(a0);
+	}
+	MCINLINE void setArmor(enum ArmorSlot a0, class ItemStack const& a1) {
+		void (Actor::*rv)(enum ArmorSlot, class ItemStack const&);
+		*((void**)&rv) = dlsym("?setArmor@Actor@@UEAAXW4ArmorSlot@@AEBVItemStack@@@Z");
+		return (this->*rv)(a0, a1);
+	}
 #if 0
 	MCINLINE void  savePersistingTrade(class std::unique_ptr<class CompoundTag,struct std::default_delete<class CompoundTag> > a0,int a1){
 void (Actor::*rv)(class std::unique_ptr<class CompoundTag,struct std::default_delete<class CompoundTag> >,int); *((void**)&rv) = dlsym("?savePersistingTrade@Actor@@QEAAXV?$unique_ptr@VCompoundTag@@U?$default_delete@VCompoundTag@@@std@@@std@@H@Z"); return (this->*rv)(a0,a1);}
@@ -1850,11 +1861,7 @@ public:
 	Mob(const Mob&) = delete;
 	Mob& operator=(const Mob&) = delete;
 	Mob() = delete;
-	MCINLINE void sendInventory(bool a0) {
-		void (Mob::*rv)(bool);
-		*((void**)&rv) = dlsym("?sendInventory@Mob@@UEAAX_N@Z");
-		return (this->*rv)(a0);
-	}
+	#ifdef MCAPI_MOB_EXTRA
 	MCINLINE void _applyRidingRotationLimits() {
 		void (Mob::*rv)();
 		*((void**)&rv) = dlsym("?_applyRidingRotationLimits@Mob@@IEAAXXZ");
@@ -1940,11 +1947,7 @@ public:
 		*((void**)&rv) = dlsym("?getArmorColorInSlot@Mob@@UEBAMW4ArmorSlot@@H@Z");
 		return (this->*rv)(a0, a1);
 	}
-	MCINLINE void addRider(class Actor& a0) {
-		void (Mob::*rv)(class Actor&);
-		*((void**)&rv) = dlsym("?addRider@Mob@@UEAAXAEAVActor@@@Z");
-		return (this->*rv)(a0);
-	}
+	
 	MCINLINE void spawnAnim() {
 		void (Mob::*rv)();
 		*((void**)&rv) = dlsym("?spawnAnim@Mob@@UEAAXXZ");
@@ -1965,11 +1968,7 @@ public:
 		*((void**)&rv) = dlsym("?aiStep@Mob@@UEAAXXZ");
 		return (this->*rv)();
 	}
-	MCINLINE class Player* getLastHurtByPlayer() {
-		class Player* (Mob::*rv)();
-		*((void**)&rv) = dlsym("?getLastHurtByPlayer@Mob@@UEAAPEAVPlayer@@XZ");
-		return (this->*rv)();
-	}
+	
 	MCINLINE bool canBeControlledByRider() {
 		bool (Mob::*rv)();
 		*((void**)&rv) = dlsym("?canBeControlledByRider@Mob@@UEAA_NXZ");
@@ -2040,11 +2039,7 @@ public:
 		*((void**)&rv) = dlsym("?setTarget@Mob@@UEAAXPEAVActor@@@Z");
 		return (this->*rv)(a0);
 	}
-	MCINLINE bool startRiding(class Actor& a0) {
-		bool (Mob::*rv)(class Actor&);
-		*((void**)&rv) = dlsym("?startRiding@Mob@@UEAA_NAEAVActor@@@Z");
-		return (this->*rv)(a0);
-	}
+	
 	MCINLINE float getInterpolatedBodyRot(float a0) const {
 		float (Mob::*rv)(float) const;
 		*((void**)&rv) = dlsym("?getInterpolatedBodyRot@Mob@@UEBAMM@Z");
@@ -2395,11 +2390,7 @@ public:
 		*((void**)&rv) = dlsym("?getArmorCoverPercentage@Mob@@UEBAMXZ");
 		return (this->*rv)();
 	}
-	MCINLINE void kill() {
-		void (Mob::*rv)();
-		*((void**)&rv) = dlsym("?kill@Mob@@UEAAXXZ");
-		return (this->*rv)();
-	}
+
 	MCINLINE bool isLookingAtAnEntity() {
 		bool (Mob::*rv)();
 		*((void**)&rv) = dlsym("?isLookingAtAnEntity@Mob@@UEAA_NXZ");
@@ -2645,11 +2636,7 @@ public:
 		*((void**)&rv) = dlsym("?getDamageAfterMagicAbsorb@Mob@@UEAAHAEBVActorDamageSource@@H@Z");
 		return (this->*rv)(a0, a1);
 	}
-	MCINLINE void stopRiding(bool a0, bool a1, bool a2) {
-		void (Mob::*rv)(bool, bool, bool);
-		*((void**)&rv) = dlsym("?stopRiding@Mob@@UEAAX_N00@Z");
-		return (this->*rv)(a0, a1, a2);
-	}
+
 	MCINLINE class Mob* getLastHurtMob() {
 		class Mob* (Mob::*rv)();
 		*((void**)&rv) = dlsym("?getLastHurtMob@Mob@@UEAAPEAV1@XZ");
@@ -2680,7 +2667,32 @@ public:
 		*((void**)&rv) = dlsym("?onBorn@Mob@@UEAAXAEAVActor@@0@Z");
 		return (this->*rv)(a0, a1);
 	}
-
+#endif
+MCINLINE void addRider(class Actor& a0) {
+		void (Mob::*rv)(class Actor&);
+		*((void**)&rv) = dlsym("?addRider@Mob@@UEAAXAEAVActor@@@Z");
+		return (this->*rv)(a0);
+	}
+MCINLINE class Player* getLastHurtByPlayer() {
+		class Player* (Mob::*rv)();
+		*((void**)&rv) = dlsym("?getLastHurtByPlayer@Mob@@UEAAPEAVPlayer@@XZ");
+		return (this->*rv)();
+	}
+MCINLINE bool startRiding(class Actor& a0) {
+		bool (Mob::*rv)(class Actor&);
+		*((void**)&rv) = dlsym("?startRiding@Mob@@UEAA_NAEAVActor@@@Z");
+		return (this->*rv)(a0);
+	}
+	MCINLINE void kill() {
+		void (Mob::*rv)();
+		*((void**)&rv) = dlsym("?kill@Mob@@UEAAXXZ");
+		return (this->*rv)();
+	}
+	MCINLINE void stopRiding(bool a0, bool a1, bool a2) {
+		void (Mob::*rv)(bool, bool, bool);
+		*((void**)&rv) = dlsym("?stopRiding@Mob@@UEAAX_N00@Z");
+		return (this->*rv)(a0, a1, a2);
+	}
 #if 0
 	MCINLINE  class std::vector<int,class std::allocator<int> >  getAllArmorID()const {
  class std::vector<int,class std::allocator<int> > (Mob::*rv)()const ; *((void**)&rv) = dlsym("?getAllArmorID@Mob@@UEBA?AV?$vector@HV?$allocator@H@std@@@std@@XZ"); return (this->*rv)();}

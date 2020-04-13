@@ -1,0 +1,25 @@
+TPA_MONEY=0
+require "pl"
+stringx.import()
+function isCmdNeedMoney(cmd)
+	if (cmd):startswith('/tpa') then
+		if cmd=='/tpa ac' or cmd=='/tpa de' or cmd=='/tpa toggle' or cmd=='/tpa cancel' then
+			return false
+		end
+		return true
+	end
+	return false
+end
+function tnm_onCMD(name,cmd)
+	if isCmdNeedMoney(cmd) then
+		if TPA_MONEY~=0 and rdMoney(name,TPA_MONEY)==false then
+			sendText(name,"Money not enough")
+			return -1 -- prevent the event
+		end
+		if cmd=='/tpa gui' then
+			GUI(name,"tpagui")
+			return -1
+		end
+	end	
+end
+Listen("onCMD","tnm_onCMD")

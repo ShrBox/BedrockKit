@@ -64,27 +64,34 @@ int lb_dbforeach(lua_State* L) {
 			}
 			return true;
 		});
+		return 0;
 	}
 	catch (string e) {
 		luaL_error(L, e.c_str());
 		return 0;
 	}
 }
-int lb_dbremoveif(lua_State* L) {
+int lb_dbremove_prefix(lua_State* L) {
 	try {
 		LuaFly fly{ L };
 		xstring prefix, cb;
 		fly.pops(cb, prefix);
 		bool flag = false;
-		db->iter([prefix,&flag](string_view k) {
+		vector<string> to_del;
+		db->iter([prefix,&flag,&to_del](string_view k) {
 			if (k._Starts_with(prefix)) {
 				flag = true;
+				to_del.emplace_back(prefix);
 			}
 			else {
 				if (flag) return false;
 			}
 			return true;
-			});
+		});
+		for (auto& i : to_del) {
+			db->del(i);
+		}
+		return 0;
 	}
 	catch (string e) {
 		luaL_error(L, e.c_str());

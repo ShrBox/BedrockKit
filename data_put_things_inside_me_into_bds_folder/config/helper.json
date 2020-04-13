@@ -1,11 +1,15 @@
 {
 "force_enable_expplay":false,
-"enable_ability":true,
 "fix_crash_bed_explode":false,
-"FIX_PUSH_CHEST":false,
-"FAKE_SEED":1919810,
+"FIX_PUSH_CHEST":true,
+"FAKE_SEED":114514,
 "CMDMAP":{
-"114514":"say 1919810"
+"0":"l m main"
 },
-"Timers":[]
+"Timers":[],
+"explosion_land_dist":8,
+"NO_EXPLOSION":false,
+"logItems":[],
+"banItems":[],
+"force_enable_ability":false
 }

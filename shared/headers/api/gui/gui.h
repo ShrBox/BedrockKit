@@ -3,11 +3,11 @@
 #include <rapidjson/document.h>
 #include <rapidjson/stringbuffer.h>
 #include <variant>
-#include <array>
 #include <stl\viewhelper.h>
 #include <api\types\types.h>
 #include<stl\optional.h>
-using std::pair;
+#include<vector>
+using std::pair,std::vector;
 namespace GUI {
 	using std::variant;
 	using result_t = variant<string, int>;
@@ -81,6 +81,12 @@ namespace GUI {
 		GUISlider(string&& t, int _min, int _max, int _step = 1, int _def = 0) : text(t), min(_min), max(_max), step(_step), def(_def) {}
 		LIGHTBASE_API void pack(rapidjson::Value&, rapidjson::Document::AllocatorType&) const;
 	};
+	struct GUISlider2 : IGUIIntData {
+		string text;
+		int steps,def;
+		GUISlider2(string&& t, int _step = 1, int _def = 0) : text(t),steps(_step), def(_def) {}
+		LIGHTBASE_API void pack(rapidjson::Value&, rapidjson::Document::AllocatorType&) const;
+	};
 	struct GUIDropdown:IGUIDropdownData {
 		std::vector<string> options;
 		string text;
@@ -93,7 +99,7 @@ namespace GUI {
 		virtual ~IForm() {}
 		virtual string_view seralize() = 0;
 	};
-	using GUI_WIDGET_T = variant<GUIInput, GUIDropdown, GUISlider, GUILabel, GUIToggle>;
+	using GUI_WIDGET_T = variant<GUIInput, GUIDropdown, GUISlider, GUILabel, GUIToggle,GUISlider2>;
 	class FullForm : public IForm {
 		rapidjson::StringBuffer json;
 

@@ -27,7 +27,7 @@ BDXLUA_API optional<long long> call_lua(const char* name, static_queue<ldata_ref
 			fly.push(i.asStr());
 		}
 	}
-	if (!fly.pCall(name, arg.size(), -1, EHIDX)) {
+	if (!fly.pCall(name, arg.size(), 1, EHIDX)) {
 		lua_settop(L, EHIDX - 1);
 		return {};
 	}
@@ -56,7 +56,6 @@ BDXLUA_API optional<long long> call_lua(const char* name, static_queue<ldata_ref
 }
 
 void reg_all_bindings() {
-	lua_register(L, "lbind", lua_call_bind_proxy);
 	lua_register(L, "L", lua_call_bind_proxy);
 	lua_register(L, "sendText", lb_sendText);
 	lua_register(L, "bcText", lb_bctext);
@@ -71,32 +70,55 @@ void reg_all_bindings() {
 	lua_register(L, "dget", lb_dbget);
 	lua_register(L, "ddel", lb_dbdel);
 	lua_register(L, "dput", lb_dbput);
+	lua_register(L, "dforeach", lb_dbforeach);
+	lua_register(L, "ddel_prefix", lb_dbremove_prefix);
 	lua_register(L, "schedule", lb_schedule);
 	lua_register(L, "cancel", lb_sch_cancel);
 	lua_register(L, "getPos", lb_getpos);
-	lua_register(L, "Listen", lb_regEventL);
-	lua_register(L, "Unlisten", lb_unregEventL);
+	lua_register(L, "TSize", [](lua_State* L) {
+		if (lua_type(L, 1) != LUA_TTABLE) {
+			luaL_error(L, "table required in TSize");
+			return 0;
+		}
+		lua_pushnil(L);
+		int c = 0;
+		while (lua_next(L, 1)) {
+			c++;
+			lua_pop(L, 1);
+		}
+		lua_settop(L, 0);
+		lua_pushinteger(L, c);
+		return 1;
+	});
 	for (auto i : onLuaReloaded) {
 		i();
 	}
 }
-bool dofile_lua(string const& name) {
+bool dofile_lua(string const& name,bool HandleException=false) {
 	std::ifstream ifs(name);
 	std::string str((std::istreambuf_iterator<char>(ifs)), std::istreambuf_iterator<char>());
+	int EHIDX = 0;
+	if (HandleException) {
+		lua_getglobal(L, "EXCEPTION");
+		EHIDX = lua_gettop(L);
+	}
 	auto state = luaL_loadbufferx(L, str.data(), str.size(), name.c_str(), nullptr);
 	if (state != 0) {
 		auto str = lua_tostring(L, -1);
-		printf("load lua error %s [%d\n", str, state);
+		printf("load lua error %s\n", str);
+		exit(1);
 		return false;
 	}
 	else {
-		auto rv = lua_pcall(L, 0, LUA_MULTRET, 0);
+		auto rv = lua_pcall(L, 0, LUA_MULTRET, EHIDX);
 		if (rv != 0) {
 			auto str = lua_tostring(L, -1);
-			printf("call lua err %s [%d\n", str, rv);
+			printf("call lua err %s\n", str);
+			exit(1);
 			return false;
 		}
 	}
+	lua_settop(L, EHIDX == 0 ? 0 : (EHIDX - 1));
 	return true;
 }
 #include<filesystem>
@@ -108,22 +130,21 @@ string wstr2str(std::wstring const& str) {
 	WideCharToMultiByte(GetACP(), 0, str.c_str(), str.size(), res.data(), res.size(), nullptr, nullptr);
 	return res;
 }
-void resetEventing();
 bool loadlua() {
 	if (L) {
 		lua_close(L);
 		lua_scheduler_reload();
-		resetEventing();
 	}
 	L = luaL_newstate();
 	luaL_openlibs(L);
 	reg_all_bindings();
 	using namespace std::filesystem;
+	dofile_lua("lua/init.lua");
 	{
 		directory_iterator ent("lua");
 		for (auto& i : ent) {
-			if (i.is_regular_file() && i.path().extension() == ".lua") {
-				dofile_lua(wstr2str(i.path()));
+			if (i.is_regular_file() && i.path().extension() == ".lua" && i.path().filename()!="init.lua") {
+				dofile_lua(wstr2str(i.path()),true);
 			}
 		}
 	}
@@ -131,7 +152,7 @@ bool loadlua() {
 		printf("[LUA/Warn] no EXCEPTION handler found!!!\n");
 		return false;
 	}
-	lua_pop(L, 1);
+	lua_settop(L, 0);
 	return true;
 }
 bool oncmd_lua(CommandOrigin const& ori, CommandOutput& outp, string& fn) {
@@ -168,13 +189,13 @@ bool oncmd_gui(CommandOrigin const& ori, CommandOutput& outp,string& v) {
 	return true;
 }
 bool oncmd_luacmd(CommandOrigin const& ori, CommandOutput& outp, CommandMessage& m) {
-	string msg=m.get(ori);
+	string msg = m.get(ori);
 	auto pos = msg.find(' ');
 	string PRE = msg.substr(0, pos);
 	string NEX;
 	if (pos != PRE.npos)
 		NEX = msg.substr(pos + 1);
-	CallEvent("onLCMD", { &ori.getName(),&PRE,&NEX });
+	CallEvent("EH_onLCMD", { &ori.getName(),&PRE,&NEX });
 	return true;
 }
 bool oncmd_dumpdb(CommandOrigin const& ori, CommandOutput& outp,string& target) {
@@ -193,10 +214,30 @@ bool oncmd_dumpdb(CommandOrigin const& ori, CommandOutput& outp,string& target) 
 	});
 	return true;
 }
+bool oncmd_deldb(CommandOrigin const& ori, CommandOutput& outp, string& target) {
+	bool flag = false;
+	vector<string> to_del;
+	db->iter([&](string_view k) {
+		if (k._Starts_with(target)) {
+			to_del.emplace_back(k);
+			outp.addMessage(string{ k.substr(target.size()) }+" deleted");
+		}
+		else {
+			if (flag) return false;  //db->iter's key is ordered
+		}
+		return true;
+	});
+	for (auto& i : to_del) {
+		db->del(i);
+	}
+	return true;
+}
+void initEvents();
 void entry() {
 	using namespace std::filesystem;
 	db = MakeKVDB(GetDataPath("lua"),true,2);
 	create_directory("gui");
+	initEvents();
 	addListener([](RegisterCommandEvent&) {
 		MakeCommand("lcall", "call lua fn", 0);
 		CmdOverload(lcall, oncmd_lua, "func name");
@@ -207,34 +248,9 @@ void entry() {
 		MakeCommand("l", "use lua command", 1);
 		CmdOverload(l, oncmd_luacmd, "cmd");
 		MakeCommand("lua_db", "dump lua db", 1);
-		CmdOverload(lua_db, oncmd_dumpdb, "player_name-");
-	});
-	addListener([](PlayerJoinEvent& ev) {
-		auto& name = ev.getPlayer().getName();
-		CallEvent("onJoin", { &name });
-	});
-	addListener([](PlayerLeftEvent& ev) {
-		auto& name = ev.getPlayer().getName();
-		CallEvent("onLeft", { &name });
-		});
-	addListener([](PlayerChatEvent& ev) {
-		auto& name = ev.getPlayer().getName();
-		if (!CallEvent("onChat", { &name,&ev.getChat() })) ev.setCancelled();
-	});
-	addListener([](PlayerCMDEvent& ev) {
-		auto& name = ev.getPlayer().getName();
-		if (!CallEvent("onCMD", { &name,&ev.getCMD() })) ev.setCancelled();
-	});
-	addListener([](MobDeathEvent& ev) {
-		auto& src=ev.getSource();
-		if (src.isEntitySource() || src.isChildEntitySource()) {
-			auto id=src.getEntityUniqueID();
-			Actor* ac=LocateS<ServerLevel>()->fetchEntity(id, false);
-			ServerPlayer* sp=MakeSP(ac);
-			if (!sp) return;
-			WPlayer wp{ *sp };
-			CallEvent("onPlayerKillMob", { &wp.getName(),ev.getMob()->getEntityTypeId() });
-		}
+		CmdOverload(lua_db, oncmd_dumpdb, "prefix");
+		MakeCommand("lua_db_del", "del lua db", 1);
+		CmdOverload(lua_db_del, oncmd_deldb,"prefix");
 	});
 	addListener([](ServerStartedEvent&) {loadlua();});
 }

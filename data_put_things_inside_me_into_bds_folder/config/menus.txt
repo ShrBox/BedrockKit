@@ -1,0 +1,57 @@
+menu main <主菜单> <服务器菜单\n123>
+	runas <回到死亡点> <> (back)
+	sub <传送系统> <> (m_tpa)
+	sub <经济系统> <> (m_eco)
+	sub <领地系统> <> (m_land)
+	sub <管理系统> <> (m_op)
+	exit <退出> <> ()
+end
+
+select s_ban <ban> <玩家> (ban ban "%dst%")
+end
+
+select s_kick <kick> <玩家> (skick "%dst%")
+end
+
+select s_invchk <Check Inventory> <玩家> (l invchk %dst%)
+end
+
+select s_mhist <Money History> <玩家> (money hist "%dst%")
+end
+
+menu m_op <管理菜单> <>
+	sub <ban> <> (s_ban)
+	sub <kick> <> (s_kick)
+	sub <查背包> <> (s_invchk)
+	sub <查金钱历史> <> (s_mhist)
+	sub <返回> <> (main)
+end
+
+menu m_tpa <传送菜单> <>
+	lua <发起传送请求> <> (u_tpagui)
+	lua <家菜单> <> (u_homegui)
+	runas <传送点列表> <> (warp gui)
+	runas <改变传送屏蔽状态> <> (tpa toggle)
+	runas <取消传送请求> <> (tpa cancel)
+	sub <返回> <> (main)
+end
+
+menu m_eco <经济菜单> <>
+	lua <转账菜单> <> (u_moneygui)
+	runas <我的历史> <> (money hist)
+	sub <示例商店> <> (firstshop)
+        sub <返回> <> (main)
+end
+
+menu m_land <领地菜单> <>
+	runas <脚下领地信息> <> (land info)
+	lua <领地权限管理> <> (u_landgui)
+	runas <! 卖出脚下领地 !> <> (land sell)
+        sub <返回> <> (main)
+end
+
+
+shop firstshop <shop> <my shop>
+	sell <钻石> <diamond> 10 1
+	buy <土 * 64> <give %name% dirt 64> 100
+end

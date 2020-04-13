@@ -39,7 +39,7 @@ int lb_schedule(lua_State* L) {
 				lua_settop(::L, EHIDX - 1);
 				return;
 			}
-			if (!LuaFly(::L).pCall(CB.c_str(), 0, -1, EHIDX)) {
+			if (!LuaFly(::L).pCall(CB.c_str(), 0, 0, EHIDX)) {
 				lua_settop(::L, EHIDX - 1);
 				return;
 			}

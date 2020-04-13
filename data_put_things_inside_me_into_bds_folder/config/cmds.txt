@@ -1,0 +1,6 @@
+alias </tpa gui> <!u_tpagui>
+alias </home gui> <!u_homegui>
+alias </land gui> <!u_landgui>
+alist </money gui> <!u_moneygui>
+alias </m> <l m main>
+cond </me> <money reduce %name% 1$tell %name% gg>

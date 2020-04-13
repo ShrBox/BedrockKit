@@ -123,7 +123,6 @@ namespace LEX {
                     rv.append(GUI::getPlayerListView());
                 }
                 else {
-                    printf("CV %d val %d\n", CV,val.size());
                     CV--;
                     if (CV >= val.size()) {
                         throw "Compile IDX Overflow "s+S(CV)+" vs. "+S(val.size());
@@ -191,7 +190,7 @@ string ProcessLabel(string_view x) {
 string getForm(string_view name) {
     auto path = "gui/"s;
     path.append(name);
-    if (!std::filesystem::exists(path)) throw "File not exists"s;
+    if (!std::filesystem::exists(path)) throw "File not exists "s.append(name);
     std::ifstream ifs(path);
     return ifs2str(ifs);
 }
@@ -208,7 +207,7 @@ void LUA_NOTIFY_CB2(const string& name, const string& pname) {
     lua_pushlstring(L, pname.data(), pname.size());
     LuaFly(L).pCall(name.c_str(), 1, 0, EHIDX);
 }
-void LUA_NOTIFY_SIMPLE(const string& name, const string& pname, int idx, const string& text) {
+void LUA_NOTIFY_SIMPLE(const string& name, const string& pname, int idx, const string& text,const string& extra) {
     lua_getglobal(L, "EXCEPTION");
     auto EHIDX = lua_gettop(L);
     if (lua_getglobal(L, name.c_str()) == 0) {
@@ -218,9 +217,10 @@ void LUA_NOTIFY_SIMPLE(const string& name, const string& pname, int idx, const s
     lua_pushlstring(L, pname.data(), pname.size());
     lua_pushinteger(L, idx);
     lua_pushlstring(L, text.data(), text.size());
-    LuaFly(L).pCall(name.c_str(), 3, 0, EHIDX);
+    lua_pushlstring(L, extra.data(), extra.size());
+    LuaFly(L).pCall(name.c_str(), 4, 0, EHIDX);
 }
-void sendSimp(WPlayer w, std::stringstream& ss, string cb,string cb2,string && tit,string && cont) {
+void sendSimp(WPlayer w, std::stringstream& ss, string cb,string cb2,string && tit,string && cont,string&& extra) {
     using namespace GUI;
     shared_ptr<SimpleForm> sf= make_shared<SimpleForm>();
     sf->title = std::forward<string>(tit);
@@ -236,11 +236,11 @@ void sendSimp(WPlayer w, std::stringstream& ss, string cb,string cb2,string && t
         else
             sf->buttons.emplace_back(ProcessLabel(mp[H("text")]));
     }
-    sendForm(w, SimpleFormBinder{ sf,[cb,cb2](WPlayer w, SimpleFormBinder::DType dt) {
+    sendForm(w, SimpleFormBinder{ sf,[cb,cb2,extra](WPlayer w, SimpleFormBinder::DType dt) {
         if (dt.set) {
             auto [idx, val] = dt.val();
             //call idx,val(s)
-            LUA_NOTIFY_SIMPLE(cb, w.getName(), idx, val);
+            LUA_NOTIFY_SIMPLE(cb, w.getName(), idx, val,extra);
         }
         else {
             //call cb2
@@ -254,7 +254,7 @@ bool Str2Bool(string_view sv) {
     }
     return atoi(sv);
 }
-void sendFull(WPlayer w, std::stringstream& ss, string cb, string cb2, string&& tit) {
+void sendFull(WPlayer w, std::stringstream& ss, string cb, string cb2, string&& tit,string&& extra) {
     using namespace GUI;
     shared_ptr<FullForm> sf = make_shared<FullForm>();
     sf->title = std::forward<string>(tit);
@@ -294,6 +294,9 @@ void sendFull(WPlayer w, std::stringstream& ss, string cb, string cb2, string&& 
             sf->widgets.emplace_back(GUISlider(string{ mp[H("text")] },miN,maX,1,def));
             break;
         }
+        case H("slider2"): {
+            sf->widgets.emplace_back(GUISlider2(string{ mp[H("text")] }, atoi(mp[H("step")]), atoi(mp[H("def")])));
+        }
         case H("toggle"): {
             sf->widgets.emplace_back(GUIToggle(string{ mp[H("text")] }, Str2Bool(mp[H("def")])));
             break;
@@ -303,7 +306,7 @@ void sendFull(WPlayer w, std::stringstream& ss, string cb, string cb2, string&& 
         }
         }
     }
-    sendForm(w, FullFormBinder(sf, [cb, cb2](WPlayer w, FullFormBinder::DType d) {
+    sendForm(w, FullFormBinder(sf, [cb, cb2,extra](WPlayer w, FullFormBinder::DType d) {
         if (d.set) {
             auto [dat, ext] = d.val();
             //push name,array(dat),array_str(ext
@@ -341,7 +344,8 @@ void sendFull(WPlayer w, std::stringstream& ss, string cb, string cb2, string&& 
                     lua_rawseti(L, -2, ++idx);
                 }
             }
-            LuaFly(L).pCall(cb.c_str(), 3, 0, EHIDX);
+            lua_pushlstring(L, extra.data(), extra.size());
+            LuaFly(L).pCall(cb.c_str(), 4, 0, EHIDX);
         }
         else {
             LUA_NOTIFY_CB2(cb2, w.getName());
@@ -361,12 +365,13 @@ void glang_send(WPlayer wp,const string& payload) {
     auto luacb2 = mp[H("cb2")];
     auto content = mp[H("content")];
     auto title = mp[H("title")];
+    auto extra = mp[H("extra")];
     if (tp == "full") {
-        sendFull(wp, ss, string{ luacb }, string{ luacb2 }, string{ title });
+        sendFull(wp, ss, string{ luacb }, string{ luacb2 }, string{ title }, string{ extra });
     }
     else {
         if (tp == "simple") {
-            sendSimp(wp, ss, string{ luacb }, string{ luacb2 }, string{ title }, ProcessLabel(content));
+            sendSimp(wp, ss, string{ luacb }, string{ luacb2 }, string{ title }, ProcessLabel(content), string{ extra });
         }
         else {
             throw "form type can only be (full,simple)"s;

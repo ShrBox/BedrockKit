@@ -28,7 +28,8 @@ struct TPASet {
 #pragma endregion
 #pragma region gvals
 static LangPack LP("langpack/tpa.json");
-
+#include<unordered_map>
+using std::unordered_map;
 static std::list<TPReq> reqs;
 static unordered_map<CHash,TPASet> tpaSetting;
 static unordered_map<string, Vec4> warps;
@@ -243,6 +244,9 @@ void saveWarps() {
 enum WARPOP :int {
 	go=1,add=2,ls=3,del=4,gui=5
 };
+enum class HOMEOP :int {
+	go = 1, add = 2, ls = 3, del = 4
+};
 bool oncmd_warp(CommandOrigin const& ori, CommandOutput& outp, MyEnum<WARPOP> op, optional<string>& val) {
 	switch (op)
 	{
@@ -290,10 +294,10 @@ bool oncmd_warp(CommandOrigin const& ori, CommandOutput& outp, MyEnum<WARPOP> op
 }
 #pragma endregion
 #pragma region HOME
-bool generic_home(CommandOrigin const& ori, CommandOutput& outp, Homes& hm, MyEnum<WARPOP> op, optional<string>& val) {
+bool generic_home(CommandOrigin const& ori, CommandOutput& outp, Homes& hm, MyEnum<HOMEOP> op, optional<string>& val) {
 	switch (op)
 	{
-	case add: {
+	case HOMEOP::add: {
 		if (ori.getPermissionsLevel() == 0 && hm.data.size() >= MAX_HOMES) {
 			outp.error(_TRS("home.is.full"));
 			return false;
@@ -314,7 +318,7 @@ bool generic_home(CommandOrigin const& ori, CommandOutput& outp, Homes& hm, MyEn
 		
 	break;
 	}
-	case del: {
+	case HOMEOP::del: {
 		hm.data.remove_if([&](auto& x) {
 			return x.name == val.value();
 			});
@@ -322,14 +326,14 @@ bool generic_home(CommandOrigin const& ori, CommandOutput& outp, Homes& hm, MyEn
 		
 		break;
 	}
-	case ls: {
+	case HOMEOP::ls: {
 		for (auto& i : hm.data) {
 			outp.addMessage(i.name + " " + i.pos.toStr());
 		}
 		
 		break;
 	}
-	case go: {
+	case HOMEOP::go: {
 		for (auto& i : hm.data) {
 			if (i.name == val.value()) {
 				i.pos.teleport(MakeWP(ori).val());
@@ -346,14 +350,10 @@ bool generic_home(CommandOrigin const& ori, CommandOutput& outp, Homes& hm, MyEn
 	}
 	return true;
 }
-bool oncmd_home(CommandOrigin const& ori, CommandOutput& outp, MyEnum<WARPOP> op, optional<string>& val) {
-	if (op == WARPOP::gui) {
-		outp.error("Not impl");
-		return false;
-	}
+bool oncmd_home(CommandOrigin const& ori, CommandOutput& outp, MyEnum<HOMEOP> op, optional<string>& val) {
 	return generic_home(ori, outp, getHomeInCache(MakeWP(ori).val().getXuid()), op, val);
 }
-bool oncmd_homeAs(CommandOrigin const& ori, CommandOutput& outp, string const& target, MyEnum<WARPOP> op, optional<string>& val) {
+bool oncmd_homeAs(CommandOrigin const& ori, CommandOutput& outp, string const& target, MyEnum<HOMEOP> op, optional<string>& val) {
 	return generic_home(ori, outp, getHomeInCache(XIDREG::str2id(target).val()), op, val);
 }
 #pragma endregion
@@ -417,6 +417,7 @@ void tpa_entry() {
 	addListener([](RegisterCommandEvent&) {
 		CEnum<direction> _1("tpdir", { "to","here" });
 		CEnum<WARPOP> _2("warpop", {"go","add","ls","del","gui"});
+		CEnum<HOMEOP> _4("homeop", { "go","add","ls","del" });
 		CEnum<TPAOP> _3("tpaop", {"ac","de","cancel","toggle"});
 		MakeCommand("tpa", "tpa system", 0);
 		MakeCommand("warp", "warp system", 0);

@@ -1,11 +1,7 @@
 ﻿#pragma once
 #error "dont use this broken header directly,CommandUtils is a namespace"
 #include"Core.h"
-class CommandUtils{
-public:
-CommandUtils(const CommandUtils&)=delete;
-CommandUtils& operator=(const CommandUtils&)=delete;
-CommandUtils()=delete;
+namespace CommandUtils{
 	MCINLINE class Actor *  spawnEntityAt(class BlockSource & a0,class Vec3 const & a1,struct ActorDefinitionIdentifier const & a2,struct ActorUniqueID & a3,class Actor * a4){
 class Actor * (CommandUtils::*rv)(class BlockSource &,class Vec3 const &,struct ActorDefinitionIdentifier const &,struct ActorUniqueID &,class Actor *); *((void**)&rv) = dlsym("?spawnEntityAt@CommandUtils@@YAPEAVActor@@AEAVBlockSource@@AEBVVec3@@AEBUActorDefinitionIdentifier@@AEAUActorUniqueID@@PEAV2@@Z"); return (this->*rv)(a0,a1,a2,a3,a4);}
 	MCINLINE bool  createMapData(class Actor & a0,class ItemInstance & a1,class CommandOutput & a2){

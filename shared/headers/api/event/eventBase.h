@@ -4,6 +4,7 @@
 #include<api/types/types.h>
 #include<I18N.h>
 #include<debug/WatchDog.h>
+#include<functional>
 using std::string, std::function,std::variant;
 enum class EvPrio:int
 {

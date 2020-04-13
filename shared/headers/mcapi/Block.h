@@ -5,6 +5,7 @@ public:
 	BlockLegacy(const BlockLegacy&) = delete;
 	BlockLegacy& operator=(const BlockLegacy&) = delete;
 	BlockLegacy() = delete;
+	#ifdef MCAPI_BLOCK_EXTRA
 	MCINLINE bool mayPlace(class BlockSource& a0, class BlockPos const& a1) const {
 		bool (BlockLegacy::*rv)(class BlockSource&, class BlockPos const&) const;
 		*((void**)&rv) = dlsym("?mayPlace@BlockLegacy@@UEBA_NAEAVBlockSource@@AEBVBlockPos@@@Z");
@@ -100,11 +101,7 @@ public:
 		*((void**)&rv) = dlsym("?setDestroyTime@BlockLegacy@@UEAAAEAV1@M@Z");
 		return (this->*rv)(a0);
 	}
-	MCINLINE class BlockLegacy& addProperty(enum BlockProperty a0) {
-		class BlockLegacy& (BlockLegacy::*rv)(enum BlockProperty);
-		*((void**)&rv) = dlsym("?addProperty@BlockLegacy@@UEAAAEAV1@W4BlockProperty@@@Z");
-		return (this->*rv)(a0);
-	}
+
 	MCINLINE void getDebugText(class std::vector<class std::basic_string<char, struct std::char_traits<char>, class std::allocator<char>>, class std::allocator<class std::basic_string<char, struct std::char_traits<char>, class std::allocator<char>>>>& a0, class BlockPos const& a1) const {
 		void (BlockLegacy::*rv)(class std::vector<class std::basic_string<char, struct std::char_traits<char>, class std::allocator<char>>, class std::allocator<class std::basic_string<char, struct std::char_traits<char>, class std::allocator<char>>>>&, class BlockPos const&) const;
 		*((void**)&rv) = dlsym("?getDebugText@BlockLegacy@@QEBAXAEAV?$vector@V?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@V?$allocator@V?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@@2@@std@@AEBVBlockPos@@@Z");
@@ -374,11 +371,7 @@ public:
 		*((void**)&rv) = dlsym("?getExplosionResistance@BlockLegacy@@UEBAMPEAVActor@@@Z");
 		return (this->*rv)(a0);
 	}
-	MCINLINE class BlockLegacy& addBlockProperty(enum BlockProperty a0) {
-		class BlockLegacy& (BlockLegacy::*rv)(enum BlockProperty);
-		*((void**)&rv) = dlsym("?addBlockProperty@BlockLegacy@@QEAAAEAV1@W4BlockProperty@@@Z");
-		return (this->*rv)(a0);
-	}
+
 	MCINLINE void destroy(class BlockSource& a0, class BlockPos const& a1, class Block const& a2, class Actor* a3) const {
 		void (BlockLegacy::*rv)(class BlockSource&, class BlockPos const&, class Block const&, class Actor*) const;
 		*((void**)&rv) = dlsym("?destroy@BlockLegacy@@UEBAXAEAVBlockSource@@AEBVBlockPos@@AEBVBlock@@PEAVActor@@@Z");
@@ -566,11 +559,7 @@ public:
 		*((void**)&rv) = dlsym("?getOutline@BlockLegacy@@UEBAAEBVAABB@@AEAVBlockSource@@AEBVBlockPos@@AEAV2@@Z");
 		return (this->*rv)(a0, a1, a2);
 	}
-	MCINLINE bool operator==(class BlockLegacy const& a0) const {
-		bool (BlockLegacy::*rv)(class BlockLegacy const&) const;
-		*((void**)&rv) = dlsym("??8BlockLegacy@@QEBA_NAEBV0@@Z");
-		return (this->*rv)(a0);
-	}
+
 	MCINLINE bool checkIsPathable(class Actor& a0, class BlockPos const& a1, class BlockPos const& a2) const {
 		bool (BlockLegacy::*rv)(class Actor&, class BlockPos const&, class BlockPos const&) const;
 		*((void**)&rv) = dlsym("?checkIsPathable@BlockLegacy@@UEBA_NAEAVActor@@AEBVBlockPos@@1@Z");
@@ -799,11 +788,7 @@ public:
 		*((void**)&rv) = dlsym("?dispense@BlockLegacy@@UEBA_NAEAVBlockSource@@AEAVContainer@@HAEBVVec3@@E@Z");
 		return (this->*rv)(a0, a1, a2, a3, a4);
 	}
-	MCINLINE short getBlockItemId() const {
-		short (BlockLegacy::*rv)() const;
-		*((void**)&rv) = dlsym("?getBlockItemId@BlockLegacy@@QEBAFXZ");
-		return (this->*rv)();
-	}
+
 	MCINLINE void spawnResources(class BlockSource& a0, class BlockPos const& a1, float a2, int a3) const {
 		void (BlockLegacy::*rv)(class BlockSource&, class BlockPos const&, float, int) const;
 		*((void**)&rv) = dlsym("?spawnResources@BlockLegacy@@QEBAXAEAVBlockSource@@AEBVBlockPos@@MH@Z");
@@ -819,7 +804,27 @@ public:
 		*((void**)&rv) = dlsym("?canBeUsedInCommands@BlockLegacy@@UEBA_N_NAEBVBaseGameVersion@@@Z");
 		return (this->*rv)(a0, a1);
 	}
-
+#endif
+	MCINLINE class BlockLegacy& addProperty(enum BlockProperty a0) {
+		class BlockLegacy& (BlockLegacy::*rv)(enum BlockProperty);
+		*((void**)&rv) = dlsym("?addProperty@BlockLegacy@@UEAAAEAV1@W4BlockProperty@@@Z");
+		return (this->*rv)(a0);
+	}
+	MCINLINE class BlockLegacy& addBlockProperty(enum BlockProperty a0) {
+		class BlockLegacy& (BlockLegacy::*rv)(enum BlockProperty);
+		*((void**)&rv) = dlsym("?addBlockProperty@BlockLegacy@@QEAAAEAV1@W4BlockProperty@@@Z");
+		return (this->*rv)(a0);
+	}
+	MCINLINE bool operator==(class BlockLegacy const& a0) const {
+		bool (BlockLegacy::*rv)(class BlockLegacy const&) const;
+		*((void**)&rv) = dlsym("??8BlockLegacy@@QEBA_NAEBV0@@Z");
+		return (this->*rv)(a0);
+	}
+	MCINLINE short getBlockItemId() const {
+		short (BlockLegacy::*rv)() const;
+		*((void**)&rv) = dlsym("?getBlockItemId@BlockLegacy@@QEBAFXZ");
+		return (this->*rv)();
+	}
 #if 0
 //   bad fun  
 
@@ -860,6 +865,7 @@ public:
 	Block(const Block&) = delete;
 	Block& operator=(const Block&) = delete;
 	Block() = delete;
+	#ifdef MCAPI_BLOCK_EXTRA
 	MCINLINE class Block const& copyState(class Block const& a0, class ItemState const& a1) const {
 		class Block const& (Block::*rv)(class Block const&, class ItemState const&)const;
 		*((void**)&rv) = dlsym("?copyState@Block@@QEBAAEBV1@AEBV1@AEBVItemState@@@Z");
@@ -870,11 +876,7 @@ public:
 		*((void**)&rv) = dlsym("?isSolidBlockingBlockAndNotSignalSource@Block@@QEBA_NXZ");
 		return (this->*rv)();
 	}
-	MCINLINE class BlockLegacy const& getLegacyBlock() const {
-		class BlockLegacy const& (Block::*rv)() const;
-		*((void**)&rv) = dlsym("?getLegacyBlock@Block@@QEBAAEBVBlockLegacy@@XZ");
-		return (this->*rv)();
-	}
+	
 	MCINLINE enum BlockRenderLayer getRenderLayer() const {
 		enum BlockRenderLayer (Block::*rv)() const;
 		*((void**)&rv) = dlsym("?getRenderLayer@Block@@UEBA?AW4BlockRenderLayer@@XZ");
@@ -905,14 +907,21 @@ public:
 		*((void**)&rv) = dlsym("?isSolidBlockingBlock@Block@@QEBA_NXZ");
 		return (this->*rv)();
 	}
-	MCINLINE class std::basic_string<char, struct std::char_traits<char>, class std::allocator<char>> toDebugString() const {
-		class std::basic_string<char, struct std::char_traits<char>, class std::allocator<char>> (Block::*rv)() const;
-		*((void**)&rv) = dlsym("?toDebugString@Block@@QEBA?AV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@XZ");
-		return (this->*rv)();
-	} MCINLINE bool hasState(class ItemState const& a0) const {
+ MCINLINE bool hasState(class ItemState const& a0) const {
 		bool (Block::*rv)(class ItemState const&) const;
 		*((void**)&rv) = dlsym("?hasState@Block@@QEBA_NAEBVItemState@@@Z");
 		return (this->*rv)(a0);
+	}
+#endif
+MCINLINE class BlockLegacy const& getLegacyBlock() const {
+		class BlockLegacy const& (Block::*rv)() const;
+		*((void**)&rv) = dlsym("?getLegacyBlock@Block@@QEBAAEBVBlockLegacy@@XZ");
+		return (this->*rv)();
+	}
+		MCINLINE class std::basic_string<char, struct std::char_traits<char>, class std::allocator<char>> toDebugString() const {
+		class std::basic_string<char, struct std::char_traits<char>, class std::allocator<char>> (Block::*rv)() const;
+		*((void**)&rv) = dlsym("?toDebugString@Block@@QEBA?AV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@XZ");
+		return (this->*rv)();
 	}
 
 #if 0

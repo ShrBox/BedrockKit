@@ -6,6 +6,7 @@ public:
 	BlockSource(const BlockSource&) = delete;
 	BlockSource& operator=(const BlockSource&) = delete;
 	BlockSource() = delete;
+	#ifdef MCAPI_BLOCKSOURCE_EXTRA
 	MCINLINE bool containsMaterial(class AABB const& a0, enum MaterialType a1) {
 		bool (BlockSource::*rv)(class AABB const&, enum MaterialType);
 		*((void**)&rv) = dlsym("?containsMaterial@BlockSource@@QEAA_NAEBVAABB@@W4MaterialType@@@Z");
@@ -36,11 +37,7 @@ public:
 		*((void**)&rv) = dlsym("?hasTickInCurrentTick@BlockSource@@QEBA_NAEBVBlockPos@@W4TickingQueueType@@@Z");
 		return (this->*rv)(a0, a1);
 	}
-	MCINLINE float getBrightness(class BlockPos const& a0) const {
-		float (BlockSource::*rv)(class BlockPos const&) const;
-		*((void**)&rv) = dlsym("?getBrightness@BlockSource@@QEBAMAEBVBlockPos@@@Z");
-		return (this->*rv)(a0);
-	}
+
 	MCINLINE class Biome* tryGetBiome(class BlockPos const& a0) const {
 		class Biome* (BlockSource::*rv)(class BlockPos const&)const;
 		*((void**)&rv) = dlsym("?tryGetBiome@BlockSource@@QEBAPEAVBiome@@AEBVBlockPos@@@Z");
@@ -95,11 +92,7 @@ public:
 		*((void**)&rv) = dlsym("?isUnderWater@BlockSource@@QEBA_NAEBVVec3@@AEBVBlock@@@Z");
 		return (this->*rv)(a0, a1);
 	}
-	MCINLINE bool hasChunksAt(class BlockPos const& a0, int a1) const {
-		bool (BlockSource::*rv)(class BlockPos const&, int) const;
-		*((void**)&rv) = dlsym("?hasChunksAt@BlockSource@@QEBA_NAEBVBlockPos@@H@Z");
-		return (this->*rv)(a0, a1);
-	}
+
 	MCINLINE bool isTouchingMaterial(class BlockPos const& a0, enum MaterialType a1) const {
 		bool (BlockSource::*rv)(class BlockPos const&, enum MaterialType) const;
 		*((void**)&rv) = dlsym("?isTouchingMaterial@BlockSource@@QEBA_NAEBVBlockPos@@W4MaterialType@@@Z");
@@ -114,11 +107,7 @@ public:
 		*((void**)&rv) = dlsym("?getHeightmap@BlockSource@@QEAAFHH@Z");
 		return (this->*rv)(a0, a1);
 	}
-	MCINLINE bool setBlockNoUpdate(int a0, int a1, int a2, class Block const& a3) {
-		bool (BlockSource::*rv)(int, int, int, class Block const&);
-		*((void**)&rv) = dlsym("?setBlockNoUpdate@BlockSource@@QEAA_NHHHAEBVBlock@@@Z");
-		return (this->*rv)(a0, a1, a2, a3);
-	}
+
 	MCINLINE bool isPositionUnderLiquid(class Vec3 const& a0, enum MaterialType a1) {
 		bool (BlockSource::*rv)(class Vec3 const&, enum MaterialType);
 		*((void**)&rv) = dlsym("?isPositionUnderLiquid@BlockSource@@QEAA_NAEBVVec3@@W4MaterialType@@@Z");
@@ -129,16 +118,8 @@ public:
 		*((void**)&rv) = dlsym("?updateNeighborsAtExceptFromFacing@BlockSource@@QEAAXAEBVBlockPos@@0H@Z");
 		return (this->*rv)(a0, a1, a2);
 	}
-	MCINLINE bool hasBlock(class BlockPos const& a0) const {
-		bool (BlockSource::*rv)(class BlockPos const&) const;
-		*((void**)&rv) = dlsym("?hasBlock@BlockSource@@QEBA_NAEBVBlockPos@@@Z");
-		return (this->*rv)(a0);
-	}
-	MCINLINE class BlockActor* getBlockEntity(class BlockPos const& a0) {
-		class BlockActor* (BlockSource::*rv)(class BlockPos const&);
-		*((void**)&rv) = dlsym("?getBlockEntity@BlockSource@@QEAAPEAVBlockActor@@AEBVBlockPos@@@Z");
-		return (this->*rv)(a0);
-	}
+
+
 	MCINLINE bool hasTickInPendingTicks(class BlockPos const& a0, enum TickingQueueType a1) const {
 		bool (BlockSource::*rv)(class BlockPos const&, enum TickingQueueType) const;
 		*((void**)&rv) = dlsym("?hasTickInPendingTicks@BlockSource@@QEBA_NAEBVBlockPos@@W4TickingQueueType@@@Z");
@@ -227,16 +208,8 @@ public:
 		*((void**)&rv) = dlsym("?hasChunksAt@BlockSource@@QEBA_NAEBVAABB@@@Z");
 		return (this->*rv)(a0);
 	}
-	MCINLINE class LevelChunk* getChunk(class ChunkPos const& a0) const {
-		class LevelChunk* (BlockSource::*rv)(class ChunkPos const&)const;
-		*((void**)&rv) = dlsym("?getChunk@BlockSource@@QEBAPEAVLevelChunk@@AEBVChunkPos@@@Z");
-		return (this->*rv)(a0);
-	}
-	MCINLINE class Block const& getBlock(class BlockPos const& a0) const {
-		class Block const& (BlockSource::*rv)(class BlockPos const&)const;
-		*((void**)&rv) = dlsym("?getBlock@BlockSource@@QEBAAEBVBlock@@AEBVBlockPos@@@Z");
-		return (this->*rv)(a0);
-	}
+
+
 	MCINLINE bool hasTickInPendingTicks(class BlockPos const& a0) const {
 		bool (BlockSource::*rv)(class BlockPos const&) const;
 		*((void**)&rv) = dlsym("?hasTickInPendingTicks@BlockSource@@QEBA_NAEBVBlockPos@@@Z");
@@ -261,11 +234,7 @@ public:
 		*((void**)&rv) = dlsym("?containsAnyLiquid@BlockSource@@QEAA_NAEBVAABB@@@Z");
 		return (this->*rv)(a0);
 	}
-	MCINLINE bool setBlock(class BlockPos const& a0, class Block const& a1, int a2, struct ActorBlockSyncMessage const* a3) {
-		bool (BlockSource::*rv)(class BlockPos const&, class Block const&, int, struct ActorBlockSyncMessage const*);
-		*((void**)&rv) = dlsym("?setBlock@BlockSource@@QEAA_NAEBVBlockPos@@AEBVBlock@@HPEBUActorBlockSyncMessage@@@Z");
-		return (this->*rv)(a0, a1, a2, a3);
-	}
+
 	MCINLINE bool getNextTickUpdateForPos(class BlockPos const& a0, enum TickingQueueType a1, struct Tick& a2) const {
 		bool (BlockSource::*rv)(class BlockPos const&, enum TickingQueueType, struct Tick&) const;
 		*((void**)&rv) = dlsym("?getNextTickUpdateForPos@BlockSource@@QEBA_NAEBVBlockPos@@W4TickingQueueType@@AEAUTick@@@Z");
@@ -330,16 +299,8 @@ public:
 		*((void**)&rv) = dlsym("?_removeFromTickingQueue@BlockSource@@AEAAXAEBVBlockPos@@AEBVBlock@@W4TickingQueueType@@@Z");
 		return (this->*rv)(a0, a1, a2);
 	}
-	MCINLINE bool setBlock(int a0, int a1, int a2, class Block const& a3, int a4) {
-		bool (BlockSource::*rv)(int, int, int, class Block const&, int);
-		*((void**)&rv) = dlsym("?setBlock@BlockSource@@QEAA_NHHHAEBVBlock@@H@Z");
-		return (this->*rv)(a0, a1, a2, a3, a4);
-	}
-	MCINLINE class Block const& getBlock(int a0, int a1, int a2) const {
-		class Block const& (BlockSource::*rv)(int, int, int)const;
-		*((void**)&rv) = dlsym("?getBlock@BlockSource@@QEBAAEBVBlock@@HHH@Z");
-		return (this->*rv)(a0, a1, a2);
-	}
+
+
 	MCINLINE class BlockTickingQueue* _getTickingQueue(class BlockPos const& a0, enum TickingQueueType a1) const {
 		class BlockTickingQueue* (BlockSource::*rv)(class BlockPos const&, enum TickingQueueType) const;
 		*((void**)&rv) = dlsym("?_getTickingQueue@BlockSource@@AEBAPEAVBlockTickingQueue@@AEBVBlockPos@@W4TickingQueueType@@@Z");
@@ -385,15 +346,68 @@ public:
 		*((void**)&rv) = dlsym("?updateNeighborsAt@BlockSource@@QEAAXAEBVBlockPos@@@Z");
 		return (this->*rv)(a0);
 	}
-	MCINLINE class BlockActor* getBlockEntity(int a0, int a1, int a2) {
-		class BlockActor* (BlockSource::*rv)(int, int, int);
-		*((void**)&rv) = dlsym("?getBlockEntity@BlockSource@@QEAAPEAVBlockActor@@HHH@Z");
-		return (this->*rv)(a0, a1, a2);
+		MCINLINE class BlockActor* getBlockEntity(class BlockPos const& a0) {
+		class BlockActor* (BlockSource::*rv)(class BlockPos const&);
+		*((void**)&rv) = dlsym("?getBlockEntity@BlockSource@@QEAAPEAVBlockActor@@AEBVBlockPos@@@Z");
+		return (this->*rv)(a0);
 	}
+
 	MCINLINE bool hasChunksAt(class BlockPos const& a0, class BlockPos const& a1) const {
 		bool (BlockSource::*rv)(class BlockPos const&, class BlockPos const&) const;
 		*((void**)&rv) = dlsym("?hasChunksAt@BlockSource@@QEBA_NAEBVBlockPos@@0@Z");
 		return (this->*rv)(a0, a1);
+	}
+	#endif
+		MCINLINE float getBrightness(class BlockPos const& a0) const {
+		float (BlockSource::*rv)(class BlockPos const&) const;
+		*((void**)&rv) = dlsym("?getBrightness@BlockSource@@QEBAMAEBVBlockPos@@@Z");
+		return (this->*rv)(a0);
+	}
+	MCINLINE bool hasChunksAt(class BlockPos const& a0, int a1) const {
+		bool (BlockSource::*rv)(class BlockPos const&, int) const;
+		*((void**)&rv) = dlsym("?hasChunksAt@BlockSource@@QEBA_NAEBVBlockPos@@H@Z");
+		return (this->*rv)(a0, a1);
+	}
+	MCINLINE bool setBlockNoUpdate(int a0, int a1, int a2, class Block const& a3) {
+		bool (BlockSource::*rv)(int, int, int, class Block const&);
+		*((void**)&rv) = dlsym("?setBlockNoUpdate@BlockSource@@QEAA_NHHHAEBVBlock@@@Z");
+		return (this->*rv)(a0, a1, a2, a3);
+	}
+	MCINLINE bool hasBlock(class BlockPos const& a0) const {
+		bool (BlockSource::*rv)(class BlockPos const&) const;
+		*((void**)&rv) = dlsym("?hasBlock@BlockSource@@QEBA_NAEBVBlockPos@@@Z");
+		return (this->*rv)(a0);
+	}
+
+	MCINLINE class LevelChunk* getChunk(class ChunkPos const& a0) const {
+		class LevelChunk* (BlockSource::*rv)(class ChunkPos const&)const;
+		*((void**)&rv) = dlsym("?getChunk@BlockSource@@QEBAPEAVLevelChunk@@AEBVChunkPos@@@Z");
+		return (this->*rv)(a0);
+	}
+	MCINLINE class Block const& getBlock(class BlockPos const& a0) const {
+		class Block const& (BlockSource::*rv)(class BlockPos const&)const;
+		*((void**)&rv) = dlsym("?getBlock@BlockSource@@QEBAAEBVBlock@@AEBVBlockPos@@@Z");
+		return (this->*rv)(a0);
+	}
+	MCINLINE bool setBlock(int a0, int a1, int a2, class Block const& a3, int a4) {
+		bool (BlockSource::*rv)(int, int, int, class Block const&, int);
+		*((void**)&rv) = dlsym("?setBlock@BlockSource@@QEAA_NHHHAEBVBlock@@H@Z");
+		return (this->*rv)(a0, a1, a2, a3, a4);
+	}
+	MCINLINE bool setBlock(class BlockPos const& a0, class Block const& a1, int a2, struct ActorBlockSyncMessage const* a3) {
+		bool (BlockSource::*rv)(class BlockPos const&, class Block const&, int, struct ActorBlockSyncMessage const*);
+		*((void**)&rv) = dlsym("?setBlock@BlockSource@@QEAA_NAEBVBlockPos@@AEBVBlock@@HPEBUActorBlockSyncMessage@@@Z");
+		return (this->*rv)(a0, a1, a2, a3);
+	}
+	MCINLINE class Block const& getBlock(int a0, int a1, int a2) const {
+		class Block const& (BlockSource::*rv)(int, int, int)const;
+		*((void**)&rv) = dlsym("?getBlock@BlockSource@@QEBAAEBVBlock@@HHH@Z");
+		return (this->*rv)(a0, a1, a2);
+	}
+	MCINLINE class BlockActor* getBlockEntity(int a0, int a1, int a2) {
+		class BlockActor* (BlockSource::*rv)(int, int, int);
+		*((void**)&rv) = dlsym("?getBlockEntity@BlockSource@@QEAAPEAVBlockActor@@HHH@Z");
+		return (this->*rv)(a0, a1, a2);
 	}
 	/*??0BlockSource@@QEAA@AEAVLevel@@AEAVDimension@@AEAVChunkSource@@_N3@Z
 	// BlockSource::BlockSource(class Level &,class Dimension &,class ChunkSource &,bool,bool)*/

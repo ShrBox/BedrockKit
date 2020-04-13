@@ -94,15 +94,16 @@ struct LuaFly {
             break;
         case LUA_TTABLE:
         {
+            int ppos = pos < 0 ? (pos - 1) : pos;
             x = "[";
             std::vector<std::pair<int, string>> mp;
             lua_pushnil(L);
-            while (lua_next(L, pos-1)) {
+            while (lua_next(L, ppos)) {
                 //val
                 //string dat{ luaL_tolstring(L,-1,&Ldat),Ldat };
                 xstring dat;
                 pop(dat);
-                int IDX = lua_tointeger(L, pos);
+                int IDX = (int)lua_tointeger(L, ppos+1);
                 mp.emplace_back(IDX, std::move(dat));
             }
             //lua_pop(L, 1); //pop key
@@ -139,7 +140,7 @@ struct LuaFly {
         if(lua_gettop(L)==0) throw "stack overflow"s;
         if (!lua_isinteger(L, -1))
             throw "int required, but "s + luaL_typename(L, -1) + " found";
-        x = lua_tointeger(L, -1);
+        x = (std::decay_t<T>)lua_tointeger(L, -1);
         lua_pop(L, 1);
     }
     template<typename T, typename std::enable_if_t <std::is_floating_point_v<std::decay_t<T>>, int> X = 0>
@@ -147,7 +148,7 @@ struct LuaFly {
         if (lua_gettop(L) == 0) throw "stack overflow"s;
         if (!lua_isnumber(L, -1))
             throw "num required, but "s + luaL_typename(L, -1) + " found";
-        x = lua_tonumber(L, -1);
+        x = (std::decay_t<T>)lua_tonumber(L, -1);
         lua_pop(L, 1);
     }
     template<typename TP>

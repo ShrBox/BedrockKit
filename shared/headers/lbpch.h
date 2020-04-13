@@ -8,16 +8,12 @@ extern Logger<stdio_commit> LOG;
 #include<cstring>
 #include<string>
 #include<string_view>
-#include<type_traits>
-#include<functional>
 #include<memory>
-#include<vector>
-#include<unordered_map>
-#include<list>
-#include <fstream>
 
-using std::string, std::string_view,std::shared_ptr,std::unique_ptr,std::vector,std::unordered_map,
-std::ifstream,std::ofstream,std::function;
+using std::string, std::string_view,std::shared_ptr,std::unique_ptr;
+using namespace std::string_literals;
+using std::make_shared, std::make_unique;
+
 #include"api/hash.h"
 #include"api/lightbase.h"
 #include"api/hook.h"
@@ -27,12 +23,6 @@ std::ifstream,std::ofstream,std::function;
 #include<stl/views.h>
 #include<api/types/types.h>
 #include<api/event/event_pch.h>
-
-#include<streambuf>
-
-
-using namespace std::string_literals;
-using std::make_shared, std::make_unique;
 
 #include<stl\useful.h>
 #include<debug/WatchDog.h>
