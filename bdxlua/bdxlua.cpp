@@ -94,6 +94,7 @@ void reg_all_bindings() {
 		i();
 	}
 }
+static bool isReload=false;
 bool dofile_lua(string const& name,bool HandleException=false) {
 	std::ifstream ifs(name);
 	std::string str((std::istreambuf_iterator<char>(ifs)), std::istreambuf_iterator<char>());
@@ -106,6 +107,7 @@ bool dofile_lua(string const& name,bool HandleException=false) {
 	if (state != 0) {
 		auto str = lua_tostring(L, -1);
 		printf("load lua error %s\n", str);
+		if(!isReload)
 		exit(1);
 		return false;
 	}
@@ -114,6 +116,7 @@ bool dofile_lua(string const& name,bool HandleException=false) {
 		if (rv != 0) {
 			auto str = lua_tostring(L, -1);
 			printf("call lua err %s\n", str);
+			if(!isReload)
 			exit(1);
 			return false;
 		}
@@ -245,12 +248,12 @@ void entry() {
 		CmdOverload(lreload, oncmd_reloadlua);
 		MakeCommand("gui", "show gui", 0);
 		CmdOverload(gui, oncmd_gui,"path");
-		MakeCommand("l", "use lua command", 1);
+		MakeCommand("l", "use lua command", 0);
 		CmdOverload(l, oncmd_luacmd, "cmd");
 		MakeCommand("lua_db", "dump lua db", 1);
 		CmdOverload(lua_db, oncmd_dumpdb, "prefix");
 		MakeCommand("lua_db_del", "del lua db", 1);
 		CmdOverload(lua_db_del, oncmd_deldb,"prefix");
 	});
-	addListener([](ServerStartedEvent&) {loadlua();});
+	addListener([](ServerStartedEvent&) {loadlua();isReload=true;});
 }
