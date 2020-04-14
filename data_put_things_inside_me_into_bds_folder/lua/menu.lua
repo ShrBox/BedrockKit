@@ -78,6 +78,9 @@ local function loadAll()
                     data["tp"]="select"
                     local cmd=line:match("%a+%s+[^%s]+%s+%b<>%s+%b<>%s+(%b())")
                     cmd=string.sub(cmd,2,-2)
+                    if cmd:sub(1,1)~='/' then
+                        cmd='/'..cmd
+                    end
                     data["F"]=function (name,raw,dat)
 			-- print(cmd:gsub("%%dst%%",dat[1]):gsub("%%name%%",name))
                         runCmdAs(name,cmd:gsub("%%dst%%",dat[1]):gsub("%%name%%",name))
@@ -97,6 +100,9 @@ local function loadAll()
                     serial=serial.."\n"
                     arg=arg:sub(2,-2)
                     if tp2=="run" or tp2=="runas" then
+                        if arg:sub(1,1)~='/' then
+                            arg='/'..arg
+                        end
                         append(data["D"],function(name)
                             if tp2=="run" then
                                 runCmd(arg:gsub("%%name%%",name))

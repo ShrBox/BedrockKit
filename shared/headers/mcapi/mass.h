@@ -10,12 +10,28 @@ struct MCRESULT {
 		return operator bool();
 	}
 };
+class CommandOrigin;
+struct CommandContext {
+	string CMD;
+	CommandOrigin* Ori;
+	int Version=10;
+	string& getCmd() {
+		return CMD;
+	}
+	class CommandOrigin& getOrigin() {
+		return *Ori;
+	}
+	template<typename TP>
+	CommandContext(TP&& x, CommandOrigin* o):CMD(std::forward<TP>(x)),Ori(o) {}
+};
+static_assert(offsetof(CommandContext,Ori)==32);
 class MinecraftCommands;
 class MinecraftCommands {
 public:
-	static MCRESULT _runcmd(void* origin, string const& cmd, int unk1, bool unk2) {
+	template<typename TP>
+	static MCRESULT _runcmd(void* origin, TP&& cmd, int unk1, bool unk2) {
 		MCRESULT rv;
-		SymCall("?requestCommandExecution@MinecraftCommands@@QEBA?AUMCRESULT@@V?$unique_ptr@VCommandOrigin@@U?$default_delete@VCommandOrigin@@@std@@@std@@AEBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@4@H_N@Z", void, MinecraftCommands*, MCRESULT*, void**, string const&, int, bool)(LocateS<MinecraftCommands>()._srv, &rv, &origin, cmd, unk1, unk2);
+		SymCall("?executeCommand@MinecraftCommands@@QEBA?AUMCRESULT@@V?$shared_ptr@VCommandContext@@@std@@_N@Z", void, MinecraftCommands*, MCRESULT*, shared_ptr<CommandContext>, bool)(LocateS<MinecraftCommands>::_srv,&rv,std::make_shared<CommandContext>(std::forward<TP>(cmd),(CommandOrigin*)origin),false);
 		return rv;
 	}
 };

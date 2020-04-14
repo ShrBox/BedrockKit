@@ -106,8 +106,9 @@ struct WPlayer : Wrapped<ServerPlayer> {
 	LBAPI void kill() {
 		mob()->kill();
 	}
-	inline bool runcmd(string const& str) {
-		return BDX::runcmdAs(*this, str);
+	template<typename T>
+	inline bool runcmd(T&& str) {
+		return BDX::runcmdAs(*this, std::forward<T>(str));
 	}
 	template<typename... T>
 	inline bool runcmdA(T&&... a) {

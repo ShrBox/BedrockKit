@@ -16,6 +16,7 @@ std::unordered_set<short> logItems,banItems;
 int explosion_land_dist;
 bool NO_EXPLOSION;
 static bool StartGamePacketMod;
+static int MAX_CHAT_LEN;
 void loadCfg() {
 	try {
 		CMDMAP.clear();
@@ -26,6 +27,9 @@ void loadCfg() {
 		ConfigJReader jr("config/helper.json");
 		jr.bind("force_enable_expplay", EXP_PLAY,false);
 		jr.bind("CMDMAP", CMDMAP);
+		for (auto& [k, v] : CMDMAP) {
+			if (v[0] != '/') v = '/' + v;
+		}
 		jr.bind("force_enable_ability", regABILITY,false);
 		jr.bind("fix_crash_bed_explode", fix_crash_bed_explode, false);
 		jr.bind("FIX_PUSH_CHEST", FIX_PUSH_CHEST, false);
@@ -34,6 +38,7 @@ void loadCfg() {
 		jr.bind("NO_EXPLOSION", NO_EXPLOSION, false);
 		//jr.bind("StartGamePacketMod", StartGamePacketMod, false);
 		jr.bind("NOFIXBDS_BONEMEAL_BUG",NOFIXBDS_BONEMEAL_BUG,false);
+		jr.bind("MAX_CHAT_LEN", MAX_CHAT_LEN, 96);
 		vector<string> Timers;
 		jr.bind("Timers", Timers, {});
 		vector<int> items;
@@ -68,6 +73,7 @@ bool onRunAS(CommandOrigin const& ori, CommandOutput& outp, CommandSelector<Play
 	auto res = p.results(ori);
 	if (!Command::checkHasTargets(res, outp)) return false;
 	string cmd = cm.get(ori);
+	if (cmd[0] != '/') cmd = '/' + cmd;
 	for (auto i : res) {
 		WPlayer wp{ *i };
 		wp.runcmd(cmd);
@@ -80,7 +86,7 @@ void loadCNAME() {
 	db = MakeKVDB(GetDataPath("custname"),false);
 	db->iter([](string_view k, string_view v) {
 		if(!k._Starts_with("b_"))
-			CNAME.emplace(k, v),LOG(k,v);
+			CNAME.emplace(k, v);
 		return true;
 	});
 }
@@ -165,7 +171,7 @@ bool onCMD_Ban(CommandOrigin const& ori, CommandOutput& outp, MyEnum<BANOP> op, 
 	}
 	case BANOP::ban: {
 		addBanEntry(S(XIDREG::str2id(entry).val()), time.set ? time.val() : 0);
-		BDX::runcmdA("skick", QUOTE(entry));
+		BDX::runcmdA("/skick", QUOTE(entry));
 		return true;
 	}
 		break;
@@ -244,6 +250,41 @@ static bool oncmd_gamemode(CommandOrigin const& ori, CommandOutput& outp,Command
 	}
 	return true;
 }
+std::unordered_map<xuid_t, time_t> mute_time;
+#include<stl\format.h>
+static bool oncmd_mute(CommandOrigin const& ori, CommandOutput& outp, CommandSelector<Player>& target,int tim) {
+	auto res = target.results(ori);
+	if (!Command::checkHasTargets(res, outp)) return false;
+	time_t to = time(0) + tim;
+	if (tim != 0) {
+		string notify(FORMAT("You have been muted for % seconds", tim));
+		for (auto i : res) {
+			WPlayer wp(*(ServerPlayer*)i);
+			mute_time[wp.getXuid()] = to;
+			wp.sendText(notify);
+		}
+	}
+	else {
+		for (auto i : res) {
+			WPlayer wp(*(ServerPlayer*)i);
+			mute_time.erase(wp.getXuid());
+			wp.sendText("You are unmuted!");
+		}
+	}
+	return true;
+}
+static inline bool isMuted(xuid_t id) {
+	auto it = mute_time.find(id);
+	if (it != mute_time.end()) {
+		time_t now = time(0);
+		if (now > it->second) {
+			mute_time.erase(it);
+			return false;
+		}
+		return true;
+	}
+	return false;
+}
 void entry() {
 	loadCfg();
 	loadCNAME();
@@ -269,6 +310,8 @@ void entry() {
 		CmdOverload(idbg, oncmd_toggle_debug);
 		MakeCommand("gmode","set gamemode",1);
 		CmdOverload(gmode, oncmd_gamemode, "target", "mode");
+		MakeCommand("mute", "mute a player (time=0 -> unmute)",1);
+		CmdOverload2(mute, oncmd_mute, [](auto& x) {std::get<0>(x).setIncludeDeadPlayers(true); }, "target", "time");
 		if (regABILITY) {
 			SymCall("?setup@AbilityCommand@@SAXAEAVCommandRegistry@@@Z", void, CommandRegistry&)(LocateS<CommandRegistry>());
 		}
@@ -312,8 +355,20 @@ void entry() {
 		LOG(ev.getPlayer().getName(), "CMD", ev.getCMD());
 		});
 	addListener([](PlayerChatEvent& ev) {
+		if (ev.getChat().size() > MAX_CHAT_LEN) {
+			ev.getPlayer().sendText("Text too long");
+			ev.setCancelled();
+			ev.setAborted();
+			return;
+		}
+		if (isMuted(ev.getPlayer().getXuid())) {
+			ev.getPlayer().sendText("You're muted");
+			ev.setCancelled();
+			ev.setAborted();
+			return;
+		}
 		LOG.l('<', ev.getPlayer().getName(), '>', ' ', ev.getChat());
-		});
+		},EvPrio::HIGH);
 	addListener([](PlayerUseItemOnEvent& ev) {
 		auto id = ev.getItemInHand()->getId();
 		if (ev.getPlayer().getPermLvl() == 0) {

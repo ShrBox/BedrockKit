@@ -11,6 +11,9 @@ local function loadAll()
         from=from:sub(2,-2)
         to=to:sub(2,-2)
         if tp=="alias" then
+            if to:sub(1,1)~='/' and to:sub(1,1)~='!' then
+                to='/'..to
+            end
             if from:sub(1,1)=='/' then
                 CMD_CMD[from]=to
             else
@@ -29,7 +32,6 @@ Listen('onChat',function(name,chat)
     if to:sub(1,1)=='!' then
         _G[to:sub(2)](name)
     else
-    	print(to)
         runCmdAs(name,to)
     end
     return -1

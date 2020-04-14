@@ -1,5 +1,0 @@
-type=full,cb=guess_gui_cb,title=你几岁了？
-type=label,text="%1 + %2 = ?"
-type=input,text="答案",placeholder=You are a smart guy
-
-

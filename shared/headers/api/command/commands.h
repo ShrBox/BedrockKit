@@ -156,9 +156,9 @@ namespace CMDREG {
 			LocateS<CommandRegistry>()->registerOverload(cname, &factory, std::forward< std::vector<CommandParameterData>>(vc));
 		}
 		template <typename... TP2>
-		MakeOverload(Dummy*, std::function<void(container&)>&& _new_cb, string const& cname, bool (*__cb)(CommandOrigin const&, CommandOutput&, TP...), TP2... argns) {
+		MakeOverload(Dummy*, void(*_new_cb)(container&) , string const& cname, bool (*__cb)(CommandOrigin const&, CommandOutput&, TP...), TP2... argns) {
 			static_assert(sizeof...(TP2) == sizeof...(TP),"every command arg should have a description");
-			new_cb = std::forward<decltype(new_cb)>(_new_cb);
+			new_cb = _new_cb;
 			sub::cb = (decltype(sub::cb))__cb;
 			std::vector<CommandParameterData> vc;
 			std::vector<string> argn;

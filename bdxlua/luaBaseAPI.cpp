@@ -34,7 +34,7 @@ int lb_runcmd(lua_State* L) {
 	size_t s1;
 	auto _n = lua_tolstring(L, 1, &s1);
 	string_view cmd(_n, s1);
-	auto rv = BDX::runcmd(string{ cmd });
+	auto rv = BDX::runcmd(cmd[0] == '/' ? string{ cmd } : ('/'+string{ cmd }));
 	lua_pop(L, n);
 	lua_pushboolean(L, rv);
 	return 1;
@@ -48,7 +48,7 @@ int lb_runcmdex(lua_State* L) {
 	size_t s1;
 	auto _n = lua_tolstring(L, 1, &s1);
 	string_view cmd(_n, s1);
-	auto [rv,res] = BDX::runcmdEx(string{ cmd });
+	auto [rv,res] = BDX::runcmdEx(cmd[0] == '/' ? string{ cmd } : ('/' + string{ cmd }));
 	lua_pop(L, n);
 	lua_pushboolean(L, rv);
 	lua_pushlstring(L, res.data(),res.size());
@@ -69,7 +69,7 @@ int lb_runcmdAs(lua_State* L) {
 	lua_pop(L, n);
 	auto ply = LocateS<WLevel>()->getPlayer(name);
 	if (ply.Set()) {
-		lua_pushboolean(L, ply.value().runcmd(cmd));
+		lua_pushboolean(L, ply.val().runcmd(cmd[0] == '/' ? string{ cmd } : ('/' + string{ cmd })));
 	}
 	else {
 		lua_pushboolean(L, false);
