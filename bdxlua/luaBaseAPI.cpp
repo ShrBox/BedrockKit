@@ -85,7 +85,6 @@ int lb_oListV(lua_State* L) {
 int lb_oList(lua_State* L) {
 	lua_settop(L, 0);
 	auto ps = LocateS<WLevel>()->getUsers();
-	lua_checkstack(L, ps.size() + 20);
 	lua_newtable(L);
 	int idx = 0;
 	for (auto i : ps) {

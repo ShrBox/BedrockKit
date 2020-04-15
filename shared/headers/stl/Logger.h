@@ -20,31 +20,43 @@ struct stdio_commit {
 #include<string>
 #include<atomic>
 #include<api\lightbase.h>
-LBAPI void registerASYNC(struct asyncFStream*);
-LBAPI void unregisterASYNC(struct asyncFStream*,struct asyncFStream*);
+LBAPI void registerASYNC2(struct asyncFStream*);
+LBAPI void unregisterASYNC2(struct asyncFStream*,struct asyncFStream*);
+using std::string;
 struct asyncFStream {
 	std::ofstream ofs;
+	std::unique_ptr<string> buf1;
+	std::unique_ptr<string> buf2;
 	std::atomic_flag _lock = ATOMIC_FLAG_INIT;
 	asyncFStream() {
-		registerASYNC(this);
+		registerASYNC2(this);
+		buf1=std::make_unique<string>();
+		buf2 = std::make_unique<string>();
+		buf1->reserve(2048);
+		buf2->reserve(2048);
 	}
-	asyncFStream(asyncFStream&& r) {
-		unregisterASYNC(&r,this);
-		ofs = std::move(r.ofs);
-		_lock.clear();
+	asyncFStream(asyncFStream&& r) noexcept{
+		unregisterASYNC2(&r,this);
+		ofs=std::move(r.ofs);
+		buf1 = std::move(r.buf1);
+		buf2 = std::move(r.buf2);
 	}
 	~asyncFStream() {
-		unregisterASYNC(this,nullptr);
+		unregisterASYNC2(this,nullptr);
+	}
+	inline void _flush_buffer(string* x) {
+		ofs.write(x->data(),x->size());
 	}
 	void close() {
 		lock();
+		_flush_buffer(buf1.get());
 		ofs.close();
 		unlock();
 	}
 	void open(const char* name) {
 		lock();
-		ofs.open(name, std::ios::app);
-		ofs << std::nounitbuf;
+		ofs.open(name,std::ios::app);
+		ofs.rdbuf()->pubsetbuf(nullptr,0);
 		unlock();
 	}
 	volatile inline void lock() {
@@ -54,18 +66,27 @@ struct asyncFStream {
 	volatile inline void unlock() {
 		_lock.clear(std::memory_order_release);
 	}
-	inline void _flush() {
-		ofs.flush();
-	}
 	void flushTimer() {
 		lock();
-		ofs.flush();
+		if (buf1->size()) {
+			buf1.swap(buf2);
+			unlock();
+			_flush_buffer(buf2.get());
+			return;
+		}
 		unlock();
 	}
 	template <typename... T>
-	void write(T&&... x) {
+	inline void write(T&&... x) {
 		lock();
-		(ofs<<...<<std::forward<T>(x));
+		(buf1->append(std::forward<T>(x)), ...);
+		unlock();
+	}
+	template <typename... T>
+	inline void writeLine(T&&... x) {
+		lock();
+		(buf1->append(std::forward<T>(x)), ...);
+		buf1->push_back('\n');
 		unlock();
 	}
 };
@@ -114,7 +135,7 @@ struct file_commit {
 		maxLogs = maxLogs_;
 		TryTidyUp();
 	}
-	file_commit(file_commit&& r):dat(std::move(r.dat)) {
+	file_commit(file_commit&& r)noexcept :dat(std::move(r.dat)){
 		maxWrite = r.maxWrite;
 		maxLogs = r.maxLogs;
 		fn = r.fn;
@@ -122,7 +143,7 @@ struct file_commit {
 	}
 	file_commit(const file_commit&) = delete;
 	void operator()(string_view extra, string_view content) {
-		dat.write(extra,content,'\n');
+		dat.writeLine(extra,content);
 		totalWrite += (unsigned  int)(extra.size() + content.size());
 		if (totalWrite > maxWrite) {
 			dat.close();

@@ -11,7 +11,7 @@ int lb_sch_cancel(lua_State* L) {
 		return 0;
 	}
 	taskid_t tid;
-	tid = lua_tointeger(L, 1);
+	tid = taskid_t(lua_tointeger(L, 1));
 	LUA_TASKS.erase(tid);
 	lua_pushboolean(L, Handler::cancel(tid));
 	return 1;
@@ -27,9 +27,9 @@ int lb_schedule(lua_State* L) {
 			throw "schedule(cb,interval,delay)"s;
 		}
 		string CB{ lua_tostring(L,1) };
-		interval = lua_tointeger(L, 2);
+		interval = int(lua_tointeger(L, 2));
 		if (n == 3) {
-			delay = lua_tointeger(L, 3);
+			delay = int(lua_tointeger(L, 3));
 		}
 		auto tid = Handler::schedule(DelayedRepeatingTask([CB]() {
 			lua_getglobal(::L, "EXCEPTION");

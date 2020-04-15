@@ -25,7 +25,7 @@ struct CBStorage {
 		is_p = 0;
 		d.f = new function<void(T&)>(std::move(f));
 	}
-	CBStorage(CBStorage&& x) {
+	CBStorage(CBStorage&& x) noexcept{
 		is_p = x.is_p;
 		static_assert(sizeof(d) == 8);
 		memcpy(&d, &x.d, sizeof(d));

@@ -4,7 +4,7 @@
 "FIX_PUSH_CHEST":true,
 "FAKE_SEED":114514,
 "CMDMAP":{
-"0":"l m main"
+"100000":"l m main"
 },
 "Timers":[],
 "explosion_land_dist":8,

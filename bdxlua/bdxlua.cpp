@@ -128,9 +128,9 @@ bool dofile_lua(string const& name,bool HandleException=false) {
 #include"framework.h"
 string wstr2str(std::wstring const& str) {
 	string res;
-	int len = WideCharToMultiByte(GetACP(), 0, str.c_str(), str.size(), nullptr, 0, nullptr, nullptr);
+	int len = WideCharToMultiByte(GetACP(), 0, str.c_str(), int(str.size()), nullptr, 0, nullptr, nullptr);
 	res.append(len, 0);
-	WideCharToMultiByte(GetACP(), 0, str.c_str(), str.size(), res.data(), res.size(), nullptr, nullptr);
+	WideCharToMultiByte(GetACP(), 0, str.c_str(), int(str.size()), res.data(), int(res.size()), nullptr, nullptr);
 	return res;
 }
 bool loadlua() {

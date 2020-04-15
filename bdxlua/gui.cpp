@@ -318,7 +318,6 @@ void sendFull(WPlayer w, std::stringstream& ss, string cb, string cb2, string&& 
             }
             lua_pushlstring(L, w.getName().data(), w.getName().size());
             {
-                lua_checkstack(L, ext.size()+dat.size() + 20);
                 lua_newtable(L);
                 int idx = 0;
                 for (auto i : dat) {
@@ -335,7 +334,6 @@ void sendFull(WPlayer w, std::stringstream& ss, string cb, string cb2, string&& 
                 }
             }
             {
-                lua_checkstack(L, ext.size()+dat.size() + 20);
                 lua_newtable(L);
                 int idx = 0;
                 for (auto i : ext) {
