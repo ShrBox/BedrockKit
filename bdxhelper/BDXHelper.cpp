@@ -17,6 +17,7 @@ int explosion_land_dist;
 bool NO_EXPLOSION;
 static bool StartGamePacketMod;
 static int MAX_CHAT_LEN;
+static bool LOG_CMD,LOG_CHAT;
 void loadCfg() {
 	try {
 		CMDMAP.clear();
@@ -39,6 +40,8 @@ void loadCfg() {
 		//jr.bind("StartGamePacketMod", StartGamePacketMod, false);
 		jr.bind("NOFIXBDS_BONEMEAL_BUG",NOFIXBDS_BONEMEAL_BUG,false);
 		jr.bind("MAX_CHAT_LEN", MAX_CHAT_LEN, 96);
+		jr.bind("LOG_CHAT", LOG_CHAT, true);
+		jr.bind("LOG_CMD", LOG_CMD, true);
 		vector<string> Timers;
 		jr.bind("Timers", Timers, {});
 		vector<int> items;
@@ -352,6 +355,7 @@ void entry() {
 		LOG(ev.getPlayer().getName(), "left server");
 		});
 	addListener([](PlayerCMDEvent& ev) {
+		if(LOG_CMD)
 		LOG(ev.getPlayer().getName(), "CMD", ev.getCMD());
 		});
 	addListener([](PlayerChatEvent& ev) {
@@ -367,6 +371,7 @@ void entry() {
 			ev.setAborted();
 			return;
 		}
+		if(LOG_CHAT)
 		LOG.l('<', ev.getPlayer().getName(), '>', ' ', ev.getChat());
 		},EvPrio::HIGH);
 	addListener([](PlayerUseItemOnEvent& ev) {

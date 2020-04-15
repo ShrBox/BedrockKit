@@ -1,9 +1,5 @@
 ﻿#include"pch.h"
-class MapItemSavedData* getMapSavedData(class ServerLevel* thi,struct ActorUniqueID a0) {
-	class MapItemSavedData* (ServerLevel:: *rv)(struct ActorUniqueID)=nullptr;
-	*((void**)&rv) = dlsym("?getMapSavedData@Level@@QEAAPEAVMapItemSavedData@@UActorUniqueID@@@Z");
-	return (thi->*rv)(a0);
-}
+#include<mcapi/Level.h>
 class LevelStorage;
 bool onCMD_map(CommandOrigin const& ori, CommandOutput& outp, string& name) {
 	auto wp = MakeWP(ori);
@@ -15,7 +11,7 @@ bool onCMD_map(CommandOrigin const& ori, CommandOutput& outp, string& name) {
 		&id,
 		((uintptr_t)&ite)+16
 		);
-	auto mapd = getMapSavedData(LocateS<ServerLevel>()._srv,id);
+	auto mapd = LocateS<ServerLevel>()->getMapSavedData(id);
 	printf("map %p\n", mapd);
 	if (!mapd) { outp.error("not a filled map"); return false; }
 	dAccess<bool, 0x62>(mapd) = true; //locked

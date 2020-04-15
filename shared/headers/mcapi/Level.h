@@ -179,11 +179,6 @@ public:
 		*((void**)&rv) = dlsym("?onNewChunk@Level@@UEAAXAEAVBlockSource@@AEAVLevelChunk@@@Z");
 		return (this->*rv)(a0, a1);
 	}
-	MCINLINE class MapItemSavedData* getMapSavedData(struct ActorUniqueID a0) {
-		class MapItemSavedData* (Level::*rv)(struct ActorUniqueID);
-		*((void**)&rv) = dlsym("?getMapSavedData@Level@@QEAAPEAVMapItemSavedData@@UActorUniqueID@@@Z");
-		return (this->*rv)(a0);
-	}
 	MCINLINE void onSourceDestroyed(class BlockSource& a0) {
 		void (Level::*rv)(class BlockSource&);
 		*((void**)&rv) = dlsym("?onSourceDestroyed@Level@@UEAAXAEAVBlockSource@@@Z");
@@ -580,6 +575,11 @@ public:
 		return (this->*rv)();
 	}
 #endif
+	MCINLINE class MapItemSavedData* getMapSavedData(struct ActorUniqueID a0) {
+		class MapItemSavedData* (Level:: * rv)(struct ActorUniqueID);
+		*((void**)&rv) = dlsym("?getMapSavedData@Level@@QEAAPEAVMapItemSavedData@@UActorUniqueID@@@Z");
+		return (this->*rv)(a0);
+	}
 	MCINLINE class Actor* fetchEntity(struct ActorUniqueID a0, bool a1) const {
 		class Actor* (Level::*rv)(struct ActorUniqueID, bool)const;
 		*((void**)&rv) = dlsym("?fetchEntity@Level@@QEBAPEAVActor@@UActorUniqueID@@_N@Z");
