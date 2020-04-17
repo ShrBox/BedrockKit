@@ -46,6 +46,7 @@ struct asyncFStream {
 	}
 	inline void _flush_buffer(string* x) {
 		ofs.write(x->data(),x->size());
+		x->clear();
 	}
 	void close() {
 		lock();
