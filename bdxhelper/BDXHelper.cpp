@@ -113,7 +113,11 @@ static void updateCNamesFor(WPlayer target) {
 		}
 	}
 }
-
+static void broadcastCNameChange(unsigned long long owner, string_view newName) {
+	for (auto i : LocateS<WLevel>()->getUsers()) {
+		sendNameTagFor(i, owner, newName);
+	}
+}
 enum class CNAMEOP :int {
 	set=1,
 	remove=2
@@ -122,17 +126,22 @@ bool onCMD_CNAME(CommandOrigin const& ori, CommandOutput& p,MyEnum<CNAMEOP> op,s
 	if (op == CNAMEOP::set) {
 		CNAME[src] = name.val();
 		db->put(src, name.val());
-		for (auto i : LocateS<WLevel>()->getUsers()) {
-			updateCNamesFor(i);
+		auto wp = LocateS<WLevel>()->getPlayer(src);
+		if (!wp.set) {
+			p.addMessage("Player not online!we will only save the custom name.");
+			return false;
 		}
+		broadcastCNameChange(wp.val().actor()->getRuntimeID(), name.val());
 	}
 	else {
-		CNAME[src] = src;
-		for (auto i : LocateS<WLevel>()->getUsers()) {
-			updateCNamesFor(i);
-		}
 		CNAME.erase(src);
 		db->del(src);
+		auto wp = LocateS<WLevel>()->getPlayer(src);
+		if (!wp.set) {
+			p.addMessage("Player not online!we will only delete the custom name.");
+			return false;
+		}
+		broadcastCNameChange(wp.val().actor()->getRuntimeID(), src);
 	}
 	return true;
 }
@@ -366,9 +375,13 @@ void entry() {
 		LOG(ev.getPlayer().getName(), "joined server,IP", ev.getPlayer().getIP());
 		/*cname start*/
 		updateCNamesFor(ev.getPlayer());
+		if (auto it = CNAME.find(ev.getPlayer().getName()); it != CNAME.end())
+			broadcastCNameChange(ev.getPlayer().actor()->getRuntimeID(), it->second);
 		});
 	addListener([](PlayerChangeDimEvent& ev) {
 		updateCNamesFor(ev.getPlayer());
+		if (auto it = CNAME.find(ev.getPlayer().getName()); it != CNAME.end())
+			broadcastCNameChange(ev.getPlayer().actor()->getRuntimeID(), it->second);
 	});
 	addListener([](PlayerPreJoinEvent& ev) {
 		auto xuid=ExtendedCertificate::getXuid(ev.cert);
