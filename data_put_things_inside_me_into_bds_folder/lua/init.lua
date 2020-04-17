@@ -40,9 +40,13 @@ local function tracebackex()
 	   while true do
 		local name, value = debug.getlocal(level, i)
 		if not name then break end
-		if i<= szarg then name='<'..name..'>' end
-		ret = ret .. "\t\t" .. name .. " =\t" .. tostringex(value, 3) .. "\n"
-		i = i + 1
+		if i<= szarg then 
+			name='<'..name..'>'
+			ret = ret .. "\t\t" .. name .. " =\t" .. tostringex(value, 3) .. "\n"
+			i = i + 1
+		else
+			break
+		end
 	   end
 	   level = level + 1
 	end
@@ -58,8 +62,6 @@ function Listen(ename,cb)
 	if G_EVENTS[ename]==nil then
 		error("cant find event")
 	end
-	-- local x=_G["EH_"..ename]
-	-- print(ename,cb)
 	if _G["EH_"..ename]==nil then
 		_G["EH_"..ename]={}
 	end
@@ -112,4 +114,43 @@ function runCmdS(cmd,break_on_error)
 	end
 	return true,res
 end
+_TASKS={}
+function schedule(cb,interval,delay)
+	-- cb:str/upvalue interval,delay:int  -> taskid:int
+	if type(cb)=="string" then
+		cb=_G[cb]
+	end
+	if cb==nil then
+		error("cant find cb,did you `schedule` before declaring the function???")
+	end
+	if delay==nil then delay=0 end
+	local tid=__gettid()
+	__schedule(tid,interval,delay)
+	_TASKS[tid]=cb
+	return tid
+end
+function cancel(taskid)
+	__cancel(taskid)
+	_TASKS[taskid]=nil
+end
+
+_MSGH={}
+
+package.cpath=".\\lualib\\?.dll"
+package.path=".\\lua\\?.lua;.\\lualib\\?.lua;.\\lua\\?\\init.lua"
+
+local Reqid2cb={}
+local HttpWorker=startThread("lua/async/ahttp.lua",function (reqid,text,code)
+	Reqid2cb[reqid](text,code)
+end)
+function get(url,cb)
+	local id
+	while true do
+		id=math.random(2000000000)
+		if Reqid2cb[id]==nil then break end
+	end
+	Reqid2cb[id]=cb
+	TSendMsg(HttpWorker,"get",id,url)
+end
+
 print("LuaInit loaded!!")

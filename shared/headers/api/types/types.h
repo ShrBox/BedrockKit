@@ -68,6 +68,7 @@ struct WActor : Wrapped<Actor> {
 	LBAPI void teleport(Vec3 to, int dimid);
 	LBAPI int getDimID();
 	LBAPI WDim getDim();
+	LBAPI unsigned long long getRuntimeID();
 };
 struct WMob : Wrapped<Mob> {
 	WMob(Mob& x) : Wrapped<Mob>(x) {}
@@ -123,7 +124,7 @@ struct WPlayer : Wrapped<ServerPlayer> {
 struct WItem : Wrapped<ItemStack> {
 	WItem(ItemStack& is) : Wrapped<ItemStack>(is) {}
 	LBAPI unsigned char getCount() const;
-	static void determine_off();
+	static void procoff();
 };
 struct WBlock : Wrapped<Block> {
 	WBlock(Block const& i) : Wrapped<Block>(i) {}

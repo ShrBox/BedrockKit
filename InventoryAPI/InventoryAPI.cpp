@@ -42,11 +42,36 @@ string dumpFillingContainer(FillingContainer* container) {
 	}
 	return rv;
 }
+#include<debug\MemSearcher.h>
+static MSearcherEx<FillingContainer*> getContainer_S2;
+/*+168
+??_7Inventory@@6B@
+*/ 
+static MSearcherEx<void*> getContainer_S1;
+/*
++3528
+??_7PlayerInventoryProxy@@6BContainerSizeChangeListener@@@
+*/
 FillingContainer* getContainer(ServerPlayer& sp) {
-	return dAccess<FillingContainer*, 168>(dAccess<void*, 3488>(&sp));
+	if (getContainer_S1.myOff == 0) {
+		getContainer_S1.init(&sp, [](void* x) {
+			return MreadPtr_Compare((const void***)x, SYM("??_7PlayerInventoryProxy@@6BContainerSizeChangeListener@@@"));
+		}, 3528, 256);
+		void* x = *getContainer_S1.get(&sp);
+		getContainer_S2.init(x, [](void* x) {
+			return MreadPtr_Compare((const void***)x, SYM("??_7Inventory@@6B@"));
+		}, 168);
+	}
+	return *getContainer_S2.get(*getContainer_S1.get(&sp));
 }
+static MSearcherEx<void> createSSideTrans_S1;
 void createSSideTrans(ServerPlayer& sp, ItemStack& from, ItemStack& to) {
-	SymCall("?_createServerSideAction@InventoryTransactionManager@@QEAAXAEBVItemStack@@0@Z", void, uintptr_t, ItemStack&, ItemStack&)(((uintptr_t)&sp) + 4832, from, to);
+	if (createSSideTrans_S1.myOff == 0) {
+		createSSideTrans_S1.init(&sp, [&](void* x) {
+			return Mcompare_pVoid(x, &sp);
+		}, 5024, 256);
+	}
+	SymCall("?_createServerSideAction@InventoryTransactionManager@@QEAAXAEBVItemStack@@0@Z", void, void*, ItemStack&, ItemStack&)(createSSideTrans_S1.get(&sp), from, to);
 }
 ItemStack& EMPTYISK() {
 	return *(ItemStack*)SYM("?EMPTY_ITEM@ItemStack@@2V1@B");
@@ -70,13 +95,9 @@ INVENTORYAPI_API int getItemCount(ServerPlayer& sp, short id,short aux) {
 	return tot;
 }
 void removeItem_impl(ServerPlayer& sp, MyItemStack& my,bool matchAux) {
-	printf("a\n");
 	createSSideTrans(sp, my, EMPTYISK());
-printf("b\n");
 	getContainer(sp)->remove(my,matchAux);
-printf("c\n");
 	sp.sendInventory(false);
-printf("d\n");
 }
 INVENTORYAPI_API bool removeItem(ServerPlayer& sp, MyItemStack& my,short aux) {
 	if (getItemCount(sp, my.get().getId(), aux) < WItem{ my }.getCount()) return false;

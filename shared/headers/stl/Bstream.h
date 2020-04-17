@@ -193,3 +193,61 @@ public:
     }
 };
 using WBStream = WBStreamImpl<std::string>;
+struct BinVariant {
+	/*long long or string*/
+    union VType{
+		long long x;
+		std::string y;
+		VType() {}
+		~VType() {}
+    } v;
+	unsigned char type;
+    BinVariant(long long x) {
+		type = 1;
+		v.x = x;
+    }
+    BinVariant(std::string&& x) {
+		type = 2;
+		new (&v.y)std::string(std::move(x));
+    }
+	BinVariant(std::string const& x) {
+	    type=2;
+		new (&v.y)std::string(x);
+    }
+    BinVariant() {
+		type = 0;
+    }
+    ~BinVariant() {
+        if (type == 2) {
+			v.y.~string();
+        }
+    }
+    void unpack(RBStream& rs) {
+		rs.apply(type);
+		switch (type) {
+		case 1: {
+			rs.apply(v.x);
+        }
+break;
+		case 2: {
+			new (&v.y)std::string();
+			rs.apply(v.y);
+		}
+		}
+    }
+    void pack(WBStream& ws) const{
+		ws.apply(type);
+		switch (type) {
+		case 1: {
+			ws.apply(v.x);
+		}
+break;
+		case 2: {
+			ws.apply(v.y);
+		}
+		}
+    }
+};
+static inline unsigned long long ZigZag(long long x) {
+    return (x << 1) ^ (x >> 63);
+}

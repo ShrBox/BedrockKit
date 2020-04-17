@@ -5,10 +5,10 @@ function u_landgui(name)
 	end
 	GUI(name,"landgui_main")
 end
-function PermDump(p,px)
+local function PermDump(p,px)
 	return (p&1)~=0,(p&2)~=0,(p&4)~=0,(p&8)~=0,(p&16)~=0,(p&32)~=0,(px&1)~=0,(px&2)~=0,(px&4)~=0,(px&8)~=0,(px&16)~=0,(px&32)~=0	
 end
-function PermSum(a,b,c,d,e,f)
+local function PermSum(a,b,c,d,e,f)
 	return a+2*b+4*c+8*d+16*e+32*f
 end
 function LANDGUIMAIN(name,idx,text)

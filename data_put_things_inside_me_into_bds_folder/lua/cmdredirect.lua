@@ -1,5 +1,4 @@
-require "pl"
-stringx.import()
+require("pl.stringx").import()
 local CMD_CMD={}
 local CHAT_CMD={}
 local CMD_COND={}

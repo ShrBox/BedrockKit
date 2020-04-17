@@ -64,7 +64,7 @@ void reg_all_bindings() {
 	lua_register(L, "runCmdEx", lb_runcmdex);
 	lua_register(L, "Log", lb_log);
 	lua_register(L, "oList", lb_oList);
-	lua_register(L, "oListV", lb_oListV);
+	//lua_register(L, "oListV", lb_oListV);
 	lua_register(L, "GUI", lua_bind_GUI);
 	lua_register(L, "GUIR", lua_bind_GUI_Raw);
 	lua_register(L, "dget", lb_dbget);
@@ -72,9 +72,13 @@ void reg_all_bindings() {
 	lua_register(L, "dput", lb_dbput);
 	lua_register(L, "dforeach", lb_dbforeach);
 	lua_register(L, "ddel_prefix", lb_dbremove_prefix);
-	lua_register(L, "schedule", lb_schedule);
-	lua_register(L, "cancel", lb_sch_cancel);
+	lua_register(L, "__schedule", lb_schedule_ex);
+	lua_register(L, "__cancel", lb_sch_cancel_ex);
+	lua_register(L, "__gettid", lb_sch_gettid);
 	lua_register(L, "getPos", lb_getpos);
+	lua_register(L, "startThread", l_StartThread);
+	lua_register(L, "stopThread", l_StopThread);
+	lua_register(L, "TSendMsg", l_SendMsg);
 	lua_register(L, "TSize", [](lua_State* L) {
 		if (lua_type(L, 1) != LUA_TTABLE) {
 			luaL_error(L, "table required in TSize");
@@ -137,6 +141,7 @@ bool loadlua() {
 	if (L) {
 		lua_close(L);
 		lua_scheduler_reload();
+		stopAll_Nowait();
 	}
 	L = luaL_newstate();
 	luaL_openlibs(L);

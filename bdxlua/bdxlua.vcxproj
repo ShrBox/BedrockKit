@@ -72,6 +72,7 @@
     <ClCompile Include="gui.cpp" />
     <ClCompile Include="ishell.cpp" />
     <ClCompile Include="lbind.cpp" />
+    <ClCompile Include="lThreading.cpp" />
     <ClCompile Include="luaBaseAPI.cpp" />
     <ClCompile Include="luaDBApi.cpp" />
     <ClCompile Include="luaEventingApi.cpp" />

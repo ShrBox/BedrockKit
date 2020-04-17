@@ -1,4 +1,4 @@
-menu={}
+local menu={}
 local I18N_SHOP1="项目"
 local I18N_BUY_SUCCESS="成功购买 "
 local I18N_MONEY_NOT_ENOUGH="你钱不够！"
@@ -90,6 +90,7 @@ local function loadAll()
             else
                 if type=="menu" then
                     -- type(run,runas,exit,lua,sub) <text> <img> (args)
+                    -- chain <text> <img> (cmdchain) (execute)
                     local tp2,text,img,arg=line:match("(%a+)%s+(%b<>)%s+(%b<>)%s+(%b())")
                     text=text:sub(2,-2)
                     img=img:sub(2,-2)
@@ -99,6 +100,15 @@ local function loadAll()
                     end
                     serial=serial.."\n"
                     arg=arg:sub(2,-2)
+                    if tp2=="chain" then
+                        local succ=line:match("%a+%s+%b<>%s+%b<>%s+%b()%s+(%b())")
+			succ=succ:sub(2,-2)
+                        append(data["D"],function(name)
+                            if runCmdS(arg:gsub("%%name%%",name),true) then
+                                runCmdS(succ:gsub("%%name%%",name))
+                            end
+                        end)
+                    end
                     if tp2=="run" or tp2=="runas" then
                         if arg:sub(1,1)~='/' then
                             arg='/'..arg

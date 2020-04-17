@@ -47,6 +47,9 @@
     <ClCompile Include="noexplosion.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
+    <ClCompile Include="noGreyText.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Library Include="..\shared\LIGHTBASE.lib" />

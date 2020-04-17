@@ -75,31 +75,25 @@ struct Tick {
 	unsigned long long t;
 };
 struct ActorUniqueID {
-	unsigned long long id;
+	long long id;
 public:
 	ActorUniqueID() {
 		id = -1;
 	}
-	ActorUniqueID(unsigned long long i) {
+	ActorUniqueID(long long i) {
 		id = i;
 	}
 	auto get() {
 		return id;
 	}
-	operator unsigned long long() {
+	operator long long() {
 		return id;
 	}
 };
+static_assert(!std::is_pod_v<ActorUniqueID>);
 class ActorRuntimeID {
-	unsigned long long id;
-
 public:
-	ActorRuntimeID() {
-		id = -1;
-	}
-	ActorRuntimeID(unsigned long long i) {
-		id = i;
-	}
+	unsigned long long id;
 	auto get() {
 		return id;
 	}
@@ -107,7 +101,7 @@ public:
 		return id;
 	}
 };
-
+static_assert(std::is_pod_v<ActorRuntimeID>);
 class ActorDamageSource {
 private:
 	char filler[0x10];

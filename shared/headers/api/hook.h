@@ -1,5 +1,6 @@
 ﻿#pragma once
 #include"lightbase.h"
+#include<string>
 extern "C" {
 	// The core api of the hook function
 		//__declspec(dllimport) int HookFunction(void* oldfunc, void** poutold, void* newfunc);
@@ -8,5 +9,5 @@ extern "C" {
 	LBAPI void* dlsym_real(char const* name);
 	LBAPI void WaitForDebugger();
 }
-#include<string>
+LBAPI std::string ptr2name(void* ptr);
 LBAPI std::string GetDataPath(const std::string& myname);

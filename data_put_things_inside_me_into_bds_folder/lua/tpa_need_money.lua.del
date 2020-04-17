@@ -22,4 +22,4 @@ function tnm_onCMD(name,cmd)
 		end
 	end	
 end
-Listen("onCMD","tnm_onCMD")
+Listen("onCMD",tnm_onCMD)

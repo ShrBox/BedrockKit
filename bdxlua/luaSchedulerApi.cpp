@@ -4,7 +4,11 @@
 #include<unordered_set>
 using std::unordered_set;
 static unordered_set<taskid_t> LUA_TASKS;
-int lb_sch_cancel(lua_State* L) {
+int lb_sch_gettid(lua_State* L) {
+	lua_pushinteger(L, Handler::gtaskid+1);
+	return 1;
+}
+int lb_sch_cancel_ex(lua_State* L) {
 	int n = lua_gettop(L);
 	if (n != 1 || !lua_isinteger(L, 1)) {
 		luaL_error(L, "cancel(taskid)");
@@ -16,17 +20,17 @@ int lb_sch_cancel(lua_State* L) {
 	lua_pushboolean(L, Handler::cancel(tid));
 	return 1;
 }
-int lb_schedule(lua_State* L) {
+int lb_schedule_ex(lua_State* L) {
 	try {
 		int n = lua_gettop(L);
 		if (n < 2) {
-			throw "schedule(cb,interval,delay)"s;
+			throw "schedule_ex(cb,interval,delay)"s;
 		}
 		int delay = 0, interval = 0;
-		if (!lua_isstring(L, 1) || !lua_isinteger(L, 2)) {
-			throw "schedule(cb,interval,delay)"s;
+		if (!lua_isinteger(L,1) || !lua_isinteger(L, 2)) {
+			throw "schedule_ex(cb,interval,delay)"s;
 		}
-		string CB{ lua_tostring(L,1) };
+		long long CB = lua_tointeger(L, 1);
 		interval = int(lua_tointeger(L, 2));
 		if (n == 3) {
 			delay = int(lua_tointeger(L, 3));
@@ -34,12 +38,9 @@ int lb_schedule(lua_State* L) {
 		auto tid = Handler::schedule(DelayedRepeatingTask([CB]() {
 			lua_getglobal(::L, "EXCEPTION");
 			auto EHIDX = lua_gettop(::L);
-			if (lua_getglobal(::L, CB.c_str()) == 0) {
-				printf("[LUA] function %s not found\n", CB.c_str());
-				lua_settop(::L, EHIDX - 1);
-				return;
-			}
-			if (!LuaFly(::L).pCall(CB.c_str(), 0, 0, EHIDX)) {
+			lua_getglobal(::L, "_TASKS");
+			lua_rawgeti(::L, -1, CB);
+			if (!LuaFly(::L).pCall("[scheduler task]", 0, 0, EHIDX)) {
 				lua_settop(::L, EHIDX - 1);
 				return;
 			}

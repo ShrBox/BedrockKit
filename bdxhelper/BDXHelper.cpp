@@ -42,6 +42,7 @@ void loadCfg() {
 		jr.bind("MAX_CHAT_LEN", MAX_CHAT_LEN, 96);
 		jr.bind("LOG_CHAT", LOG_CHAT, true);
 		jr.bind("LOG_CMD", LOG_CMD, true);
+		jr.bind("NOGREYTEXT", NOGREYTEXT, true);
 		vector<string> Timers;
 		jr.bind("Timers", Timers, {});
 		vector<int> items;
@@ -93,6 +94,26 @@ void loadCNAME() {
 		return true;
 	});
 }
+
+#include<stl/Bstream.h>
+static void sendNameTagFor(WPlayer target, unsigned long long owner, string_view newName) {
+	WBStream ws;
+	ws.apply(VarULong(owner));
+	ws.apply(VarUInt(1));//size
+	ws.apply(VarUInt(4), VarUInt(4)); //id=nametag,type=string
+	ws.apply(MCString(newName));
+	MyPkt<0x27> pk{ ws };
+	target->sendNetworkPacket(pk);
+}
+static void updateCNamesFor(WPlayer target) {
+	for (auto i : LocateS<WLevel>()->getUsers()) {
+		auto& name = i.getName();
+		if (auto it = CNAME.find(name); it != CNAME.end()) {
+			sendNameTagFor(target, i.actor()->getRuntimeID(), it->second);
+		}
+	}
+}
+
 enum class CNAMEOP :int {
 	set=1,
 	remove=2
@@ -101,8 +122,15 @@ bool onCMD_CNAME(CommandOrigin const& ori, CommandOutput& p,MyEnum<CNAMEOP> op,s
 	if (op == CNAMEOP::set) {
 		CNAME[src] = name.val();
 		db->put(src, name.val());
+		for (auto i : LocateS<WLevel>()->getUsers()) {
+			updateCNamesFor(i);
+		}
 	}
 	else {
+		CNAME[src] = src;
+		for (auto i : LocateS<WLevel>()->getUsers()) {
+			updateCNamesFor(i);
+		}
 		CNAME.erase(src);
 		db->del(src);
 	}
@@ -288,6 +316,19 @@ static inline bool isMuted(xuid_t id) {
 	}
 	return false;
 }
+bool oncmd_vanish(CommandOrigin const& ori, CommandOutput& outp) {
+	auto wp = MakeWP(ori).val();
+	VarULong ul(ZigZag(wp->getUniqueID().id));
+	WBStream ws;
+	ws.apply(ul);
+	MyPkt<14> pk{ ws };
+	for (auto i : LocateS<WLevel>()->getUsers()) {
+		if(i.v!=wp.v)
+			i->sendNetworkPacket(pk);
+	}
+	return true;
+}
+
 void entry() {
 	loadCfg();
 	loadCNAME();
@@ -315,13 +356,20 @@ void entry() {
 		CmdOverload(gmode, oncmd_gamemode, "target", "mode");
 		MakeCommand("mute", "mute a player (time=0 -> unmute)",1);
 		CmdOverload2(mute, oncmd_mute, [](auto& x) {std::get<0>(x).setIncludeDeadPlayers(true); }, "target", "time");
+		MakeCommand("vanish", "hide yourself", 1);
+		CmdOverload(vanish, oncmd_vanish);
 		if (regABILITY) {
 			SymCall("?setup@AbilityCommand@@SAXAEAVCommandRegistry@@@Z", void, CommandRegistry&)(LocateS<CommandRegistry>());
 		}
 	});
 	addListener([](PlayerJoinEvent& ev) {
 		LOG(ev.getPlayer().getName(), "joined server,IP", ev.getPlayer().getIP());
+		/*cname start*/
+		updateCNamesFor(ev.getPlayer());
 		});
+	addListener([](PlayerChangeDimEvent& ev) {
+		updateCNamesFor(ev.getPlayer());
+	});
 	addListener([](PlayerPreJoinEvent& ev) {
 		auto xuid=ExtendedCertificate::getXuid(ev.cert);
 		auto be1 = getBanEntry(xuid);
