@@ -1,4 +1,4 @@
-﻿// BDXHelper.cpp : 定义 DLL 的导出函数。
+﻿ // BDXHelper.cpp : 定义 DLL 的导出函数。
 //
 
 #include "pch.h"
@@ -85,6 +85,8 @@ bool onRunAS(CommandOrigin const& ori, CommandOutput& outp, CommandSelector<Play
 	return true;
 }
 unordered_map<string, string> CNAME;
+#include<api\refl\playerMap.h>
+playerMap<string> ORIG_NAME;
 unique_ptr<KVDBImpl> db;
 void loadCNAME() {
 	db = MakeKVDB(GetDataPath("custname"),false);
@@ -95,7 +97,9 @@ void loadCNAME() {
 	});
 }
 
+#if 0
 #include<stl/Bstream.h>
+
 static void sendNameTagFor(WPlayer target, unsigned long long owner, string_view newName) {
 	WBStream ws;
 	ws.apply(VarULong(owner));
@@ -105,6 +109,7 @@ static void sendNameTagFor(WPlayer target, unsigned long long owner, string_view
 	MyPkt<0x27> pk{ ws };
 	target->sendNetworkPacket(pk);
 }
+
 static void updateCNamesFor(WPlayer target) {
 	for (auto i : LocateS<WLevel>()->getUsers()) {
 		auto& name = i.getName();
@@ -118,6 +123,7 @@ static void broadcastCNameChange(unsigned long long owner, string_view newName) 
 		sendNameTagFor(i, owner, newName);
 	}
 }
+#endif
 enum class CNAMEOP :int {
 	set=1,
 	remove=2
@@ -135,7 +141,8 @@ bool onCMD_CNAME(CommandOrigin const& ori, CommandOutput& p,MyEnum<CNAMEOP> op,s
 			p.addMessage("Player not online!we will only save the custom name.");
 			return false;
 		}
-		broadcastCNameChange(wp.val().actor()->getRuntimeID(), str);
+		wp.val()->setName(str);
+		ORIG_NAME[wp.val().v] = wp.val().getName();
 	}
 	else {
 		CNAME.erase(src);
@@ -145,7 +152,8 @@ bool onCMD_CNAME(CommandOrigin const& ori, CommandOutput& p,MyEnum<CNAMEOP> op,s
 			p.addMessage("Player not online!we will only delete the custom name.");
 			return false;
 		}
-		broadcastCNameChange(wp.val().actor()->getRuntimeID(), src);
+		wp.val()->setName(src);
+		ORIG_NAME._map.erase(wp.val().v);
 	}
 	return true;
 }
@@ -271,6 +279,7 @@ static bool oncmd_toggle_debug(CommandOrigin const& ori, CommandOutput& outp) {
 	if (id.id != -1) {
 		removeListener(id);
 		removeListener(id2);
+		id.id = -1;
 		outp.success("disabled");
 	}
 	else {
@@ -342,6 +351,12 @@ bool oncmd_vanish(CommandOrigin const& ori, CommandOutput& outp) {
 	return true;
 }
 
+THook(string&, "?getNameTag@Actor@@UEBAAEBV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@XZ", void* x) {
+	if (auto it = ORIG_NAME._map.find((ServerPlayer*)x); it != ORIG_NAME._map.end()) {
+		return it->second;
+	}
+	return original(x);
+}
 void entry() {
 	loadCfg();
 	loadCNAME();
@@ -378,15 +393,11 @@ void entry() {
 	addListener([](PlayerJoinEvent& ev) {
 		LOG(ev.getPlayer().getName(), "joined server,IP", ev.getPlayer().getIP());
 		/*cname start*/
-		updateCNamesFor(ev.getPlayer());
-		if (auto it = CNAME.find(ev.getPlayer().getName()); it != CNAME.end())
-			broadcastCNameChange(ev.getPlayer().actor()->getRuntimeID(), it->second);
+		if (auto it = CNAME.find(ev.getPlayer().getName()); it != CNAME.end()) {
+			ev.getPlayer()->setName(it->second);
+			ORIG_NAME[ev.getPlayer().v] = ev.getPlayer().getName();
+		}
 		});
-	addListener([](PlayerChangeDimEvent& ev) {
-		updateCNamesFor(ev.getPlayer());
-		if (auto it = CNAME.find(ev.getPlayer().getName()); it != CNAME.end())
-			broadcastCNameChange(ev.getPlayer().actor()->getRuntimeID(), it->second);
-	});
 	addListener([](PlayerPreJoinEvent& ev) {
 		auto xuid=ExtendedCertificate::getXuid(ev.cert);
 		auto be1 = getBanEntry(xuid);

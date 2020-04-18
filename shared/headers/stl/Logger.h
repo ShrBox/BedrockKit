@@ -28,6 +28,10 @@ struct asyncFStream {
 	std::unique_ptr<string> buf1;
 	std::unique_ptr<string> buf2;
 	std::atomic_flag _lock = ATOMIC_FLAG_INIT;
+#define lock()                                            \
+	while (_lock.test_and_set(std::memory_order_acquire)) \
+	std::this_thread::yield()
+#define unlock() _lock.clear()
 	asyncFStream() {
 		registerASYNC2(this);
 		buf1=std::make_unique<string>();
@@ -60,22 +64,13 @@ struct asyncFStream {
 		ofs.rdbuf()->pubsetbuf(nullptr,0);
 		unlock();
 	}
-	volatile inline void lock() {
-		while (_lock.test_and_set(std::memory_order_acquire))
-			std::this_thread::yield();
-	}
-	volatile inline void unlock() {
-		_lock.clear(std::memory_order_release);
-	}
 	void flushTimer() {
-		lock();
 		if (buf1->size()) {
+			lock();
 			buf1.swap(buf2);
 			unlock();
 			_flush_buffer(buf2.get());
-			return;
 		}
-		unlock();
 	}
 	template <typename... T>
 	inline void write(T&&... x) {
@@ -90,6 +85,8 @@ struct asyncFStream {
 		buf1->push_back('\n');
 		unlock();
 	}
+	#undef lock
+	#undef unlock
 };
 using std::string;
 struct file_commit {

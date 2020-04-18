@@ -4,6 +4,9 @@
 #include "pch.h"
 #include "BDXLand.h"
 #include "shared.h"
+
+static int LAND_MIN_Y = 0;
+
 static Logger LOG(stdio_commit{ "[LAND] " });
 LangPack LP("langpack/land.json");
 #define to_lpos(x) ((x) ^ 0x80000000)
@@ -418,7 +421,8 @@ BDXLAND_API bool checkLandOwnerRange(IVec2 vc, IVec2 vc2, int dim, unsigned long
 	return true;
 }
 
-static inline FastLand const* genericPerm(BlockPos const& pos, WPlayer wp, LandPerm pm=LandPerm::NOTHING) {	
+static inline FastLand const* genericPerm(BlockPos const& pos, WPlayer wp, LandPerm pm=LandPerm::NOTHING) {
+	if (pos.y < LAND_MIN_Y) return nullptr;
 	return genericPerm(pos.x, pos.z, wp, pm);
 }
 static bool oncmd_2(CommandOrigin const& ori, CommandOutput& outp, MyEnum<LANDOP> op) {
@@ -562,6 +566,7 @@ static void loadConfig() {
 		jr.bind("SELL_PRICE", SELL_PRICE);
 		jr.bind("PROTECT_FARM", PROTECT_FARM);
 		jr.bind("PROTECT_IFRAME", PROTECT_IFRAME);
+		jr.bind("LAND_MIN_Y", LAND_MIN_Y);
 	}
 	catch (string e) {
 		LOG.p<LOGLVL::Fatal>("json error", e);
@@ -800,6 +805,7 @@ void entry() {
 	addListener([](PlayerUseItemOnEntityEvent& ev) {
 		if (!ev.victim) return; //maybe player hit a npc?
 		IVec2 vc(ev.victim->getPos());
+		if (ev.victim->getPos().y < LAND_MIN_Y) return;
 		LandPerm pm = ev.type == PlayerUseItemOnEntityEvent::TransType::ATTACK ? LandPerm::PERM_ATK : LandPerm::PERM_INTERWITHACTOR;
 		auto fl = genericPerm(vc.x, vc.z, ev.getPlayer(), pm);
 		if (fl) {
@@ -810,6 +816,7 @@ void entry() {
 	},EvPrio::HIGH);
 	addListener([](MobHurtedEvent& ev) {
 		IVec2 pos (ev.getMob()->getPos());
+		if (ev.getMob()->getPos().y < LAND_MIN_Y) return;
 		FastLand const* fl = LandImpl::getFastLand(pos.x, pos.z, ev.getMob().actor()->getDimID());
 		if (fl) {
 			if (/*ev.getSource().isEntitySource() || We already filtered ent source in useitemOnEnt event*/ev.getSource().isChildEntitySource())
@@ -819,7 +826,7 @@ void entry() {
 				ServerPlayer* sp = MakeSP(ac);
 				if (!sp) return;
 				WPlayer wp{ *sp };
-				if (fl->getOPerm(wp.getXuid()) == 0 && (fl->dim & LandPerm::PERM_ATK) == 0) {
+				if (fl->getOPerm(wp.getXuid()) == 0 && (fl->perm_others & LandPerm::PERM_ATK) == 0) {
 					ev.setAborted();
 					ev.setCancelled();
 					NoticePerm(wp, fl);

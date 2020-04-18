@@ -75,6 +75,15 @@ void reg_all_bindings() {
 	lua_register(L, "startThread", l_StartThread);
 	lua_register(L, "stopThread", l_StopThread);
 	lua_register(L, "TSendMsg", l_SendMsg);
+	lua_register(L, "isOP", [](lua_State* L) {
+		try {
+			LuaFly lf{ L };
+			string name;
+			lf.pop(name);
+			lua_pushboolean(L, LocateS<WLevel>()->getPlayer(name).val().getPermLvl() != 0);
+			return 1;
+		}CATCH()
+	});
 	lb_fs_entry(L);
 	lua_sch_entry(L);
 	lua_register(L, "TSize", [](lua_State* L) {
