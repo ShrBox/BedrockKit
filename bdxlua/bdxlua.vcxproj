@@ -76,6 +76,7 @@
     <ClCompile Include="luaBaseAPI.cpp" />
     <ClCompile Include="luaDBApi.cpp" />
     <ClCompile Include="luaEventingApi.cpp" />
+    <ClCompile Include="luaFilesystem.cpp" />
     <ClCompile Include="luaLogging.cpp" />
     <ClCompile Include="luaSchedulerApi.cpp" />
     <ClCompile Include="pch.cpp">

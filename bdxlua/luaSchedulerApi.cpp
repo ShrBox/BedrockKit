@@ -4,11 +4,11 @@
 #include<unordered_set>
 using std::unordered_set;
 static unordered_set<taskid_t> LUA_TASKS;
-int lb_sch_gettid(lua_State* L) {
+static int lb_sch_gettid(lua_State* L) {
 	lua_pushinteger(L, Handler::gtaskid+1);
 	return 1;
 }
-int lb_sch_cancel_ex(lua_State* L) {
+static int lb_sch_cancel_ex(lua_State* L) {
 	int n = lua_gettop(L);
 	if (n != 1 || !lua_isinteger(L, 1)) {
 		luaL_error(L, "cancel(taskid)");
@@ -20,7 +20,7 @@ int lb_sch_cancel_ex(lua_State* L) {
 	lua_pushboolean(L, Handler::cancel(tid));
 	return 1;
 }
-int lb_schedule_ex(lua_State* L) {
+static int lb_schedule_ex(lua_State* L) {
 	try {
 		int n = lua_gettop(L);
 		if (n < 2) {
@@ -60,4 +60,22 @@ void lua_scheduler_reload() {
 	for (taskid_t id : LUA_TASKS) {
 		Handler::cancel(id);
 	}
+}
+/*
+lua_register(L, "__schedule", lb_schedule_ex);
+	lua_register(L, "__cancel", lb_sch_cancel_ex);
+	lua_register(L, "__gettid", lb_sch_gettid);
+*/
+static const luaL_Reg R[] =
+{
+	{ "schedule",	lb_schedule_ex	},
+	{ "cancel",	lb_sch_cancel_ex	},
+	{ "gettid",lb_sch_gettid },
+	{ NULL,		NULL	}
+};
+int lua_sch_entry(lua_State* L) {
+	lua_newtable(L);
+	luaL_setfuncs(L, R, 0);
+	lua_setglobal(L, "schapi");
+	return 0;
 }

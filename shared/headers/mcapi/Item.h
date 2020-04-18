@@ -1,7 +1,7 @@
 ﻿#pragma once
 #include "Core.h"
 class ItemStackBase {
-	char filler[312];
+	char filler[136];
 
 public:
 	MCINLINE class std::basic_string<char, struct std::char_traits<char>, class std::allocator<char>> toString() const {

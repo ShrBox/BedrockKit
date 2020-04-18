@@ -54,7 +54,6 @@ BDXLUA_API optional<long long> call_lua(const char* name, static_queue<ldata_ref
 		}
 	}
 }
-
 void reg_all_bindings() {
 	lua_register(L, "L", lua_call_bind_proxy);
 	lua_register(L, "sendText", lb_sendText);
@@ -72,13 +71,12 @@ void reg_all_bindings() {
 	lua_register(L, "dput", lb_dbput);
 	lua_register(L, "dforeach", lb_dbforeach);
 	lua_register(L, "ddel_prefix", lb_dbremove_prefix);
-	lua_register(L, "__schedule", lb_schedule_ex);
-	lua_register(L, "__cancel", lb_sch_cancel_ex);
-	lua_register(L, "__gettid", lb_sch_gettid);
 	lua_register(L, "getPos", lb_getpos);
 	lua_register(L, "startThread", l_StartThread);
 	lua_register(L, "stopThread", l_StopThread);
 	lua_register(L, "TSendMsg", l_SendMsg);
+	lb_fs_entry(L);
+	lua_sch_entry(L);
 	lua_register(L, "TSize", [](lua_State* L) {
 		if (lua_type(L, 1) != LUA_TTABLE) {
 			luaL_error(L, "table required in TSize");

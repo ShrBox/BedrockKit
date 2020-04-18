@@ -62,6 +62,30 @@ int lb_cleanHand(lua_State* L) {
         return 0;
     }CATCH()
 }
+int lb_test(lua_State* L) {
+    try {
+        LuaFly lf{ L };
+        string pname,fname;
+        lf.pops(fname,pname);
+        WPlayer wp = LocateS<WLevel>()->getPlayer(pname).val();
+        string x=EdumpInventory_bin(wp);
+        std::ofstream ofs(fname, std::ios::ate | std::ios::binary);
+        ofs.write(x.data(), x.size());
+        EclearInventory(wp);
+        return 0;
+    }CATCH()
+}
+int lb_test2(lua_State* L) {
+    try {
+        LuaFly lf{ L };
+        string pname, fname;
+        lf.pops(fname,pname);
+        WPlayer wp = LocateS<WLevel>()->getPlayer(pname).val();
+        std::ifstream ifs(fname, std::ios::binary);
+        ErestoreInventory(wp, ifs2str(ifs));
+        return 0;
+    }CATCH()
+}
 int lb_getHand(lua_State* L) {
     try {
         LuaFly lf{ L };
@@ -73,15 +97,24 @@ int lb_getHand(lua_State* L) {
         return 2;
     }CATCH()
 }
+
+static const luaL_Reg R[] = {
+         { "sClear", lb_safeclear	},
+    { "giveItem", lb_giveItem	},
+    { "dumpInv", lb_dumpinv	},
+    { "clearHand", lb_cleanHand	},
+    { "getHand", lb_getHand	},
+    { "MoveEnderChestTo", lb_test	},
+     { "LoadEnderChestFrom", lb_test2	},
+    { NULL,		NULL	}
+};
 extern "C" {
     _declspec(dllexport) void onPostInit() {
         std::ios::sync_with_stdio(false);
         registerLuaLoadHook([] {
-            lua_register(L, "sClear", lb_safeclear);
-            lua_register(L, "giveItem", lb_giveItem);
-            lua_register(L, "dumpInv", lb_dumpinv);
-            lua_register(L, "cleanHand", lb_cleanHand);
-            lua_register(L, "getHand", lb_getHand);
+            lua_newtable(L);
+            luaL_setfuncs(L, R, 0);
+            lua_setglobal(L, "invapi");
         });
     }
 }

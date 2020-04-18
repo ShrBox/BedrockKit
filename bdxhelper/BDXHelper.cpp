@@ -124,14 +124,18 @@ enum class CNAMEOP :int {
 };
 bool onCMD_CNAME(CommandOrigin const& ori, CommandOutput& p,MyEnum<CNAMEOP> op,string& src,optional<string>& name) {
 	if (op == CNAMEOP::set) {
-		CNAME[src] = name.val();
-		db->put(src, name.val());
+		auto& str = name.val();
+		for (int i = 0; i < str.size(); ++i) {
+			if (str[i] == '^') str[i] = '\n';
+		}
+		CNAME[src] = str;
+		db->put(src, str);
 		auto wp = LocateS<WLevel>()->getPlayer(src);
 		if (!wp.set) {
 			p.addMessage("Player not online!we will only save the custom name.");
 			return false;
 		}
-		broadcastCNameChange(wp.val().actor()->getRuntimeID(), name.val());
+		broadcastCNameChange(wp.val().actor()->getRuntimeID(), str);
 	}
 	else {
 		CNAME.erase(src);

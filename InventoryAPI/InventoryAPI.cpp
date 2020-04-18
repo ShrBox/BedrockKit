@@ -4,6 +4,9 @@
 #include "pch.h"
 #include "InventoryAPI.h"
 class Item;
+MyItemStack::MyItemStack() {
+	SymCall("??0ItemStack@@QEAA@XZ", void, void*)(this);
+}
 MyItemStack::MyItemStack(string const& name,int count,int aux) {
 	struct WeakData {
 		Item* x;
@@ -28,8 +31,10 @@ struct FillingContainer {
 		return SymCall("?getItem@FillingContainer@@UEBAAEBVItemStack@@H@Z", ItemStack&, void*, int)(this, i);
 	}
 	void remove(ItemStack& it,bool matchAux){
-		printf("x %d\n",WItem(it).getCount());
 		return SymCall("?removeResource@FillingContainer@@QEAAHAEBVItemStack@@_N1H@Z",void,void*,ItemStack&,bool,bool,int)(this,it,matchAux,0,WItem(it).getCount());
+	}
+	void set(int i, ItemStack const& x) {
+		SymCall("?setItem@FillingContainer@@UEAAXHAEBVItemStack@@@Z", void, void*, int, ItemStack const&)(this, i, x);
 	}
 };
 string dumpFillingContainer(FillingContainer* container) {
@@ -111,6 +116,99 @@ INVENTORYAPI_API void addItem(ServerPlayer& sp, MyItemStack& it) {
 	createSSideTrans(sp, EMPTYISK(),it);
 	sp.add(it);
 	sp.sendInventory(false);
+}
+struct CompoundTag {
+	unsigned long long filler[3];
+	CompoundTag() {
+		SymCall("??0CompoundTag@@QEAA@XZ", void, void*)(this);
+	}
+	~CompoundTag() {
+		SymCall("??1CompoundTag@@UEAA@XZ", void, void*)(this);
+	}
+	struct StrOutp {
+		void* vtbl = SYM("??_7StringByteOutput@@6B@");
+		string* payload;
+		StrOutp(string& x) {
+			payload = &x;
+		}
+	};
+	struct StrInp {
+		void* vtbl = SYM("??_7StringByteInput@@6B@");
+		u64 posnow;
+		u64 total;
+		const char* strBase;
+		StrInp(string_view v) {
+			posnow = 0;
+			total = v.size();
+			strBase = v.data();
+		}
+	};
+	string serialize() const {
+		string o;
+		StrOutp ou(o);
+		SymCall("?write@CompoundTag@@UEBAXAEAVIDataOutput@@@Z", void, void const*, StrOutp&)(this, ou);
+		return o;
+	}
+	void deserialize(string const& p) {
+		StrInp in(p);
+		SymCall("?load@CompoundTag@@UEAAXAEAVIDataInput@@@Z", void, void*, StrInp&)(this, in);
+	}
+};
+struct ItemWrapper {
+	class std::unique_ptr<class CompoundTag, struct std::default_delete<class CompoundTag> >  save() const {
+		class std::unique_ptr<class CompoundTag, struct std::default_delete<class CompoundTag> >(ItemWrapper:: * rv)()const; *((void**)&rv) = dlsym("?save@ItemStackBase@@QEBA?AV?$unique_ptr@VCompoundTag@@U?$default_delete@VCompoundTag@@@std@@@std@@XZ"); return (this->*rv)();
+	}
+	static std::unique_ptr<MyItemStack> fromTag(class CompoundTag const& a0) {
+		MyItemStack* ms=new MyItemStack("dirt", 1, 0);
+		((void(*)(MyItemStack*,class CompoundTag const&))dlsym("?fromTag@ItemStack@@SA?AV1@AEBVCompoundTag@@@Z"))(ms,a0);
+		return std::unique_ptr<MyItemStack>(ms);
+	}
+};
+INVENTORYAPI_API string ItemStackSerialize(ItemStack const& x) {
+	auto tag=((ItemWrapper*)&x)->save();
+	return tag->serialize();
+}
+INVENTORYAPI_API std::unique_ptr<MyItemStack> ItemStackDeserialize(string const& x) {
+	CompoundTag tag;
+	tag.deserialize(x);
+	return ItemWrapper::fromTag(tag);
+}
+#include<stl\Bstream.h>
+INVENTORYAPI_API string EdumpInventory_bin(ServerPlayer& sp) {
+	FillingContainer* c = (FillingContainer*)sp.getEnderChestContainer();
+	std::vector<string> pack;
+	if (c) {
+		int s = c->size();
+		pack.reserve(s);
+		for (int i = 0; i < s; ++i) {
+			auto& item = c->get(i);
+			pack.emplace_back(ItemStackSerialize(item));
+		}
+	}
+	WBStream ws;
+	ws.apply(pack);
+	return ws.data;
+}
+INVENTORYAPI_API void EclearInventory(ServerPlayer& sp) {
+	FillingContainer* c = (FillingContainer*)sp.getEnderChestContainer();
+	if (c) {
+		int s = c->size();
+		for (int i = 0; i < s; ++i) {
+			c->set(i, EMPTYISK());
+		}
+	}
+}
+INVENTORYAPI_API void ErestoreInventory(ServerPlayer& sp, string_view bin) {
+	FillingContainer* c = (FillingContainer*)sp.getEnderChestContainer();
+	if (c) {
+		std::vector<string> pack;
+		RBStream rs(bin);
+		rs.apply(pack);
+		for (int i = 0; i < pack.size(); ++i) {
+			auto ite = ItemStackDeserialize(pack[i]);
+			c->set(i, ite->get());
+		}
+	}
 }
 #if 0
 THook(void * ,"?removeResource@FillingContainer@@QEAAHAEBVItemStack@@_N1H@Z",void* thi,void* item,bool unk,bool unk1,int unk2){  //unk2 maxcount //unk1 1

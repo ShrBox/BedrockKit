@@ -2,8 +2,8 @@
 #include"Loader.h"
 #include<string_view>
 #include<string>
+#include<stl/useful.h>
 using std::string_view;
-enum class PacketReliability { Relible, RelibleOrdered };
 class BinaryStream {
 public:
     std::string& getRaw() {
@@ -12,11 +12,11 @@ public:
 };
 class Packet {
 public:
-    unsigned unk2 = 2;                                 // 8
-    PacketReliability reliableOrdered = PacketReliability::RelibleOrdered; // 12
-    unsigned char clientSubId = 0;                                 // 16
-    unsigned unk24 = 0;                                 // 24
-    unsigned compressible = 0;                                 // 32
+    u32 unk2 = 2;                                 // 8
+    u32 reliableOrdered = 1; // 12
+    u8 clientSubId = 0;                                 // 16
+    u64 unk24_0 = 0; //24
+    u32 compressible = 0;                                // 32
     inline Packet(unsigned compress) : compressible(compress) {}
     inline Packet() {}
     inline virtual ~Packet() {}
@@ -26,7 +26,9 @@ public:
     virtual void dummyread()= 0;
     virtual bool disallowBatching() const = 0;
 };
-template<int pid,bool batching=true,bool compress=true>
+static_assert(sizeof(Packet) == 40);
+
+template <int pid, bool batching = true, bool compress = true>
 class MyPkt:public Packet {
 public:
     string_view view;
@@ -49,3 +51,4 @@ public:
     virtual void dummyread() {}
     virtual bool disallowBatching() const { return !batching; }
 };
+static_assert(offsetof(MyPkt<0>, view) == 40);

@@ -18,6 +18,7 @@ class ServerPlayer;
 class INVENTORYAPI_API MyItemStack {
 	unsigned long long filler[18];
 public:
+	MyItemStack();
 	MyItemStack(string const& name,int count,int aux);
 	~MyItemStack();
 	MyItemStack(MyItemStack const&) = delete;
@@ -36,3 +37,8 @@ INVENTORYAPI_API int getItemCount(ServerPlayer& sp, short id, short aux=-1);
 INVENTORYAPI_API bool removeItem(ServerPlayer&, MyItemStack& ite, short aux=-1);
 INVENTORYAPI_API void addItem(ServerPlayer&, MyItemStack&);
 INVENTORYAPI_API void ForceRemoveItem(ServerPlayer& sp, MyItemStack& my);
+INVENTORYAPI_API string ItemStackSerialize(ItemStack const&);
+INVENTORYAPI_API std::unique_ptr<MyItemStack> ItemStackDeserialize(string const&);
+INVENTORYAPI_API string EdumpInventory_bin(ServerPlayer& sp);
+INVENTORYAPI_API void EclearInventory(ServerPlayer& sp);
+INVENTORYAPI_API void ErestoreInventory(ServerPlayer& sp, string_view bin);

@@ -23,9 +23,7 @@ int lb_dbremove_prefix(lua_State* L);
 
 
 void lua_scheduler_reload();
-int lb_sch_cancel_ex(lua_State* L);
-int lb_schedule_ex(lua_State* L);
-int lb_sch_gettid(lua_State* L);
+
 
 extern unique_ptr<KVDBImpl> db;
 
@@ -39,3 +37,5 @@ int l_StartThread(lua_State* L);
 int l_StopThread(lua_State* L);
 int l_SendMsg(lua_State* L);
 
+int lb_fs_entry(lua_State* L);
+int lua_sch_entry(lua_State* L);
