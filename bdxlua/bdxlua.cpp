@@ -80,6 +80,10 @@ void reg_all_bindings() {
 			LuaFly lf{ L };
 			string name;
 			lf.pop(name);
+			if (name == "Server") {
+				lua_pushboolean(L, true);
+				return 1;
+			}
 			lua_pushboolean(L, LocateS<WLevel>()->getPlayer(name).val().getPermLvl() != 0);
 			return 1;
 		}CATCH()
