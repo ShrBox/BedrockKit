@@ -16,7 +16,7 @@ class ItemStack;
 class ServerPlayer;
 // 此类是从 dll 导出的
 class INVENTORYAPI_API MyItemStack {
-	unsigned long long filler[18];
+	unsigned long long filler[32];
 public:
 	MyItemStack();
 	MyItemStack(string const& name,int count,int aux);
