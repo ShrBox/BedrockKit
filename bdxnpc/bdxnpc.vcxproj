@@ -176,7 +176,6 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <Library Include="..\shared\BDXLUA.lib" />
     <Library Include="..\shared\LIGHTBASE.lib" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

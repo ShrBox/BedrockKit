@@ -1,5 +1,6 @@
 ﻿#include"pch.h"
 #include"luaBindings.h"
+#if 0
 ldata_t _lpget(int i) {
 	if (lua_isinteger(L, i)) {
 		return { lua_tointeger(L,i) };
@@ -61,3 +62,4 @@ int lua_call_bind_proxy(lua_State* L) {
 	}
 	return 0;
 }
+#endif

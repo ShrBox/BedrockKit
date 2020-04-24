@@ -38,10 +38,13 @@
     <ClCompile Include="LandTradeManager.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
+    <ClCompile Include="luaapi.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Library Include="..\shared\LIGHTBASE.lib" />
-    <Library Include="..\shared\BDXLUA.lib" />
     <Library Include="..\shared\BDXMONEY.lib" />
+    <Library Include="..\shared\BDXLUA.lib" />
   </ItemGroup>
 </Project>

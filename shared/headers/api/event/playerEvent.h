@@ -11,9 +11,9 @@ public:
 };
 class PlayerCMDEvent : public IGenericPlayerEvent<PlayerCMDEvent> {
 public:
-	string const& _cmd;
-	PlayerCMDEvent(ServerPlayer& sp, string const& cmd) : IGenericPlayerEvent(sp), _cmd(cmd) {}
-	const string& getCMD() {
+	string_view _cmd;
+	PlayerCMDEvent(ServerPlayer& sp, string_view cmd) : IGenericPlayerEvent(sp), _cmd(cmd) {}
+	string_view getCMD() {
 		return _cmd;
 	}
 };

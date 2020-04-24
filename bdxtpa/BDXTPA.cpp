@@ -406,9 +406,8 @@ void loadall() {
 	loadCfg();
 }
 void InitLUAAPI();
-#include<bdxlua.h>
 void tpa_entry() {
-	registerLuaLoadHook(InitLUAAPI);
+	InitLUAAPI();
 	checkLandOwnerRange_stub({ 0, 0 }, { 0, 0 }, 0, 0);
 	db=MakeKVDB(GetDataPath("tpa"), true, 8);
 	loadall();

@@ -1,5 +1,6 @@
 ﻿#include"pch.h"
 #include"bdxlua.h"
+#include"luaBindings.h"
 #include<thread>
 #include<deque>
 #include<mutex>
@@ -38,6 +39,7 @@ struct LThread {
 		lua_State* S=nullptr;
 		MQueue mq;
 		int TID;
+		int LuaRef;
 		static int lua_SEND(lua_State* L) {
 			int n = lua_gettop(L);
 			WBStream ws;
@@ -58,11 +60,11 @@ struct LThread {
 				}
 			}
 			ws.apply(BinVariant{});
-			lua_getglobal(L, "_MYID");
-			Handler::scheduleNext([id = lua_tointeger(L,-1), M(std::move(ws.data))]{
-				int X = lua_gettop(::L);
-				lua_getglobal(::L,"_MSGH");
-				lua_rawgeti(::L, -1, id);
+			lua_rawgetp(L, LUA_REGISTRYINDEX, (const void*)0x114514);
+			Handler::scheduleNext([id = lua_tointeger(L, -1), M(std::move(ws.data))]{
+				LuaStackBalance B(::_L);
+				int EHIDX(getEHIDX());
+				lua_rawgeti(::_L, LUA_REGISTRYINDEX, id);
 				RBStream rs(M);
 				int acnt = 0;
 				while (1) {
@@ -71,16 +73,15 @@ struct LThread {
 					if (bv.type == 0) break;
 					acnt++;
 					if (bv.type == 1) {
-						lua_pushinteger(::L, bv.v.x);
+						lua_pushinteger(::_L, bv.v.x);
 					}
 					else {
-						lua_pushlstring(::L, bv.v.y.data(), bv.v.y.size());
+						lua_pushlstring(::_L, bv.v.y.data(), bv.v.y.size());
 					}
 				}
-				if (lua_pcall(::L, acnt, 0, 0) != 0) {
-					printf("[lua error] MSG Handler %d error:%s\n", id, lua_tostring(::L, -1));
+				if (lua_pcall(::_L, acnt, 0, EHIDX) != 0) {
+					printf("[lua error] MSG Handler %lld error:%s\n", id, lua_tostring(::_L, -1));
 				}
-				lua_settop(::L, X);
 			});
 			lua_pop(L, 1);
 			return 0;
@@ -104,18 +105,20 @@ struct LThread {
 				return 1;
 			});
 			lua_register(S, "SEND", lua_SEND);
-			lua_pushinteger(S, TID);
-			lua_setglobal(S, "_MYID");
+			lua_pushinteger(S, LuaRef);
+			lua_rawsetp(S, LUA_REGISTRYINDEX, (const void*)0x114514);
 			luaL_loadfile(S, "lua/async/init_async.lua");
-			lua_pcall(S,0,LUA_MULTRET, 0);
+			lua_pcall(S,0,0,0);
 			lua_getglobal(S, "EXCEPTION");
 			int EHIDX = lua_gettop(S);
 			luaL_loadfile(S, fn);
-			if (lua_pcall(S, 0, LUA_MULTRET, EHIDX) != 0) {
+			if (lua_pcall(S, 0, 0, EHIDX) != 0) {
 				printf("[lua error] in thread %d :%s\n", TID, lua_tostring(S, -1));
 				return false;
 			}
 			lua_settop(S, 0);
+			lua_getglobal(S, "EXCEPTION");
+			//top =1
 			return true;
 		}
 		void work_loop() {
@@ -128,11 +131,9 @@ struct LThread {
 					},5));
 					return;
 				}
-				lua_getglobal(S, "EXCEPTION");
-				int EHIDX = lua_gettop(S);
+				LuaStackBalance B(S);
 				if (lua_getglobal(S, param1.c_str()) == 0) {
 					printf("[lua thread %d] fn %s not found\n", TID,param1.c_str());
-					lua_settop(S, EHIDX - 1);
 					continue;
 				}
 				RBStream rs(param2);
@@ -149,10 +150,9 @@ struct LThread {
 						lua_pushlstring(S, bv.v.y.data(),bv.v.y.size());
 					}
 				}
-				if (lua_pcall(S, acnt, 0, EHIDX) != 0) {
+				if (lua_pcall(S, acnt, 0, 1) != 0) {
 					printf("[lua thread %d] EXCEPTION in fn %s:%s\n", TID,param1.c_str(), lua_tostring(S, -1));
 				}
-				lua_settop(S, EHIDX - 1);
 			}
 			} 
 			);
@@ -186,21 +186,17 @@ int l_StartThread(lua_State* L) {
 		luaL_error(L, "error arg");
 		return 0;
 	}
-	xstring cb;
+	string_view cb(LReadStr(L,1));
 	LuaFly lf(L);
-	lf.readx(cb, 1);
-	int tid=getTID();
-	auto& thisthd = THREADS.emplace(tid,0 ).first->second;
+	int tid = getTID();
+	auto& thisthd = THREADS.emplace(tid,0).first->second;
 	thisthd.TID = tid;
-	if (!thisthd.init_env(cb.c_str())) {
+	thisthd.LuaRef= luaL_ref(L, LUA_REGISTRYINDEX);
+	if (!thisthd.init_env(cb.data())) {
 		THREADS.erase(tid);
 		luaL_error(L, "cant start thread");
 		return 0;
 	}
-	lua_getglobal(L, "_MSGH");
-	//str:cb lambda:msgh table
-	lua_replace(L,1);
-	lua_rawseti(L, 1 , tid);
 	thisthd.work_loop();
 	lua_settop(L, 0);
 	lf.push(tid);
@@ -221,7 +217,7 @@ int l_StopThread(lua_State* L) {
 int l_SendMsg(lua_State* L) {
 	int tid;
 	string call;
-	tid = lua_tointeger(L, 1);
+	tid = int(lua_tointeger(L, 1));
 	call = lua_tostring(L, 2);
 	int n = lua_gettop(L);
 	WBStream ws;
@@ -249,4 +245,15 @@ int l_SendMsg(lua_State* L) {
 	}
 	it->second.mq.push({std::move(call),std::move(ws.data)});
 	return 0;
+}
+static void lt_entry(lua_State* L) {
+	lua_register(L, "startThread", l_StartThread);
+	lua_register(L, "stopThread", l_StopThread);
+	lua_register(L, "TSendMsg", l_SendMsg);
+}
+static void lt_stop(lua_State* L) {
+	stopAll_Nowait();
+}
+LModule luaThreading_module() {
+	return { lt_entry,lt_stop };
 }

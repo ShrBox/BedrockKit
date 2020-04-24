@@ -11,7 +11,6 @@ unordered_map<int, string> CMDMAP;
 bool regABILITY;
 bool fix_crash_bed_explode, FIX_PUSH_CHEST;
 int FAKE_SEED;
-vector<taskid_t> TASKS;
 std::unordered_set<short> logItems,banItems;
 int explosion_land_dist;
 bool NO_EXPLOSION;
@@ -21,16 +20,9 @@ static bool LOG_CMD,LOG_CHAT;
 void loadCfg() {
 	try {
 		CMDMAP.clear();
-		for (auto i : TASKS) {
-			Handler::cancel(i);
-		}
-		TASKS.clear();
 		ConfigJReader jr("config/helper.json");
 		jr.bind("force_enable_expplay", EXP_PLAY,false);
 		jr.bind("CMDMAP", CMDMAP);
-		for (auto& [k, v] : CMDMAP) {
-			if (v[0] != '/') v = '/' + v;
-		}
 		jr.bind("force_enable_ability", regABILITY,false);
 		jr.bind("fix_crash_bed_explode", fix_crash_bed_explode, false);
 		jr.bind("FIX_PUSH_CHEST", FIX_PUSH_CHEST, false);
@@ -43,8 +35,6 @@ void loadCfg() {
 		jr.bind("LOG_CHAT", LOG_CHAT, true);
 		jr.bind("LOG_CMD", LOG_CMD, true);
 		jr.bind("NOGREYTEXT", NOGREYTEXT, true);
-		vector<string> Timers;
-		jr.bind("Timers", Timers, {});
 		vector<int> items;
 		logItems.clear();
 		banItems.clear();
@@ -56,17 +46,6 @@ void loadCfg() {
 		if (EXP_PLAY) {
 			LOG("\n\nEXP Play mode is BUGGY!!!\n\n");
 		}
-		for (auto& i : Timers) {
-			char _luabuf[256];
-			int interval=-1, delay=-1;
-			sscanf_s(i.c_str(), "%d;%d;%s",&interval,&delay,_luabuf,256);
-			if (delay == -1) continue;
-			string lua = _luabuf;
-			LOG("enabled timer", lua, interval, delay);
-			TASKS.push_back(Handler::schedule(DelayedRepeatingTask([lua]() {
-				call_lua(lua.c_str(), {});
-			}, delay, interval)));
-		}
 	}
 	catch (string e) {
 		printf("[BDXHelper] json error %s\n", e.c_str());
@@ -77,7 +56,6 @@ bool onRunAS(CommandOrigin const& ori, CommandOutput& outp, CommandSelector<Play
 	auto res = p.results(ori);
 	if (!Command::checkHasTargets(res, outp)) return false;
 	string cmd = cm.get(ori);
-	if (cmd[0] != '/') cmd = '/' + cmd;
 	for (auto i : res) {
 		WPlayer wp{ *i };
 		wp.runcmd(cmd);
@@ -223,7 +201,7 @@ bool onCMD_Ban(CommandOrigin const& ori, CommandOutput& outp, MyEnum<BANOP> op, 
 	}
 	case BANOP::ban: {
 		addBanEntry(S(XIDREG::str2id(entry).val()), time.set ? time.val() : 0);
-		BDX::runcmdA("/skick", QUOTE(entry));
+		BDX::runcmdA("skick", QUOTE(entry));
 		return true;
 	}
 		break;
@@ -477,8 +455,9 @@ THook(void, "?write@TextPacket@@UEBAXAEAVBinaryStream@@@Z", void* a, void* b) {
 	//+40 +48
 	if (dAccess<char, 40>(a) == 1) {
 		auto& name = dAccess<string, 48>(a);
-		auto it = CNAME.find(name);
-		if (it != CNAME.end()) name = it->second;
+		for (auto& ch : name) {
+			if (ch == '\n') ch = ' ';
+		}
 	}
 	original(a, b);
 }

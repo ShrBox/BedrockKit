@@ -255,6 +255,11 @@ int RealLua_rdMoney(lua_State* L) {
 	CATCH()
 }
 void entry() {
+	registerLuaModule(LModule([](lua_State* L) {
+		lua_register(L, "getMoney", RealLua_getMoney);
+		lua_register(L, "addMoney", RealLua_addMoney);
+		lua_register(L, "rdMoney", RealLua_rdMoney);
+		}));
 	if (!initDB()) {
 		exit(1);
 	}
@@ -280,12 +285,4 @@ void entry() {
 		LOG.p<LOGLVL::Error>("json error", e);
 		throw 0;
 	}
-	bindings.emplace("getMoney", getMoney_lua);
-	bindings.emplace("rdMoney", rdMoney_lua);
-	bindings.emplace("addMoney", addMoney_lua);
-	registerLuaLoadHook([]() {
-		lua_register(L, "getMoney", RealLua_getMoney);
-		lua_register(L, "addMoney", RealLua_addMoney);
-		lua_register(L, "rdMoney", RealLua_rdMoney);
-	});
 }

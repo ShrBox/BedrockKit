@@ -3,16 +3,23 @@
 bool LUA_SHELL_ENABLED;
 string LAST_INPUT_BUFFER;
 void ExecuteLuaInBuffer() {
-	lua_getglobal(L, "EXCEPTION");
-	auto EHIDX = lua_gettop(L);
-	luaL_loadstring(L, LAST_INPUT_BUFFER.c_str());
-	if (lua_pcall(L, 0, -1, EHIDX) != 0) {
-		auto str = lua_tostring(L, -1);
+	int TOP = lua_gettop(_L);
+	int EHIDX;
+	if (!_LIsInMain) {
+		lua_rawgeti(_L, LUA_REGISTRYINDEX, _LEHIDX);
+		EHIDX = lua_gettop(_L);
+	}
+	else {
+		EHIDX = 1;
+	}
+	luaL_loadstring(_L, LAST_INPUT_BUFFER.c_str());
+	if (lua_pcall(_L, 0, 0, EHIDX) != 0) {
+		auto str = lua_tostring(_L, -1);
 		printf("[LUA] error: %s\n", str);
-		lua_settop(L, EHIDX - 1);
+		lua_settop(_L, TOP);
 		return;
 	}
-	lua_settop(L, EHIDX - 1);
+	lua_settop(_L, TOP);
 }
 THook(int, "??$try_dequeue@V?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@@?$SPSCQueue@V?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@$0CAA@@@QEAA_NAEAV?$basic_string@DU?$char_traits@D@std@@V?$allocator@D@2@@std@@@Z", void* que, string& content) {
 	//onConsoleInput

@@ -111,10 +111,10 @@ static const luaL_Reg R[] = {
 extern "C" {
     _declspec(dllexport) void onPostInit() {
         std::ios::sync_with_stdio(false);
-        registerLuaLoadHook([] {
+        registerLuaModule(LModule([](lua_State* L) {
             lua_newtable(L);
             luaL_setfuncs(L, R, 0);
             lua_setglobal(L, "invapi");
-        });
+        }));
     }
 }

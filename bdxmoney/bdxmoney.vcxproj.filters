@@ -38,8 +38,8 @@
   </ItemGroup>
   <ItemGroup>
     <Library Include="..\shared\LIGHTBASE.lib" />
-    <Library Include="..\shared\BDXLUA.lib" />
     <Library Include="..\third-party\lib\sqlite3.lib" />
     <Library Include="..\third-party\lib\SQLiteCpp.lib" />
+    <Library Include="..\shared\BDXLUA.lib" />
   </ItemGroup>
 </Project>

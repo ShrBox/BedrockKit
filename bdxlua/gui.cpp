@@ -1,5 +1,6 @@
 ﻿#include"pch.h"
 #include"bdxlua.h"
+#include"luaBindings.h"
 namespace LEX {
     struct Dstring_view {
         char* data;
@@ -198,27 +199,10 @@ using LEX::H;
 
 void LUA_NOTIFY_CB2(const string& name, const string& pname) {
     if (name.size() == 0) return;
-    lua_getglobal(L, "EXCEPTION");
-    auto EHIDX = lua_gettop(L);
-    if (lua_getglobal(L, name.c_str()) == 0) {
-        printf("[LUA] guicb2 %s not found\n", name.c_str());
-        return;
-    }
-    lua_pushlstring(L, pname.data(), pname.size());
-    LuaFly(L).pCall(name.c_str(), 1, 0, EHIDX);
+    call_luaex_norv(name.c_str(), pname);
 }
 void LUA_NOTIFY_SIMPLE(const string& name, const string& pname, int idx, const string& text,const string& extra) {
-    lua_getglobal(L, "EXCEPTION");
-    auto EHIDX = lua_gettop(L);
-    if (lua_getglobal(L, name.c_str()) == 0) {
-        printf("[LUA] guicb %s not found\n", name.c_str());
-        return;
-    }
-    lua_pushlstring(L, pname.data(), pname.size());
-    lua_pushinteger(L, idx);
-    lua_pushlstring(L, text.data(), text.size());
-    lua_pushlstring(L, extra.data(), extra.size());
-    LuaFly(L).pCall(name.c_str(), 4, 0, EHIDX);
+    call_luaex_norv(name.c_str(), pname,idx,text,extra);
 }
 void sendSimp(WPlayer w, std::stringstream& ss, string cb,string cb2,string && tit,string && cont,string&& extra) {
     using namespace GUI;
@@ -310,40 +294,40 @@ void sendFull(WPlayer w, std::stringstream& ss, string cb, string cb2, string&& 
         if (d.set) {
             auto [dat, ext] = d.val();
             //push name,array(dat),array_str(ext
-            lua_getglobal(L, "EXCEPTION");
-            auto EHIDX = lua_gettop(L);
-            if (lua_getglobal(L, cb.c_str()) == 0) {
+            LuaStackBalance B(_L);
+            int EHIDX(getEHIDX());
+            if (lua_getglobal(_L, cb.c_str()) == 0) {
                 printf("[LUA] guicb %s not found\n", cb.c_str());
                 return;
             }
-            lua_pushlstring(L, w.getName().data(), w.getName().size());
+            lua_pushlstring(_L, w.getName().data(), w.getName().size());
             {
-                lua_newtable(L);
+                lua_newtable(_L);
                 int idx = 0;
                 for (auto i : dat) {
                     //lua_pushstring(L, i.getName().c_str());
                     if (i.index() == 0) {
                         //string
-                        lua_pushlstring(L, std::get<string>(i).data(), std::get<string>(i).size());
+                        lua_pushlstring(_L, std::get<string>(i).data(), std::get<string>(i).size());
                     }
                     else {
                         //int
-                        lua_pushinteger(L, std::get<int>(i));
+                        lua_pushinteger(_L, std::get<int>(i));
                     }
-                    lua_rawseti(L, -2, ++idx);
+                    lua_rawseti(_L, -2, ++idx);
                 }
             }
             {
-                lua_newtable(L);
+                lua_newtable(_L);
                 int idx = 0;
                 for (auto i : ext) {
                     //lua_pushstring(L, i.getName().c_str());
-                    lua_pushlstring(L, (i).data(), (i).size());
-                    lua_rawseti(L, -2, ++idx);
+                    lua_pushlstring(_L, (i).data(), (i).size());
+                    lua_rawseti(_L, -2, ++idx);
                 }
             }
-            lua_pushlstring(L, extra.data(), extra.size());
-            LuaFly(L).pCall(cb.c_str(), 4, 0, EHIDX);
+            lua_pushlstring(_L, extra.data(), extra.size());
+            LuaFly(_L).pCall(cb.c_str(), 4, 0, EHIDX);
         }
         else {
             LUA_NOTIFY_CB2(cb2, w.getName());
@@ -437,4 +421,24 @@ int lua_bind_GUI_Raw(lua_State* L) {
         return 0;
     }
     return lua_bind_GUI_impl(L, lua_popStrV(L,2));
+}
+bool oncmd_gui(CommandOrigin const& ori, CommandOutput& outp, string& v) {
+    auto wp = MakeWP(ori);
+    if (v.find('.') != v.npos || v.find('/') != v.npos || v.find('\\') != v.npos) return false;
+    glang_send(wp.val(), LEX::Compile(getForm("u_" + v), {}));
+    return true;
+}
+LModule luagui_module() {
+    return LModule{ [](lua_State* L)->void {
+        static bool inited = false;
+        if (!inited) {
+            inited = true;
+            addListener([](RegisterCommandEvent&) {
+                MakeCommand("gui", "show gui", 0);
+                CmdOverload(gui, oncmd_gui, "path");
+                });
+        }
+        lua_register(L, "GUI", lua_bind_GUI);
+        lua_register(L, "GUIR", lua_bind_GUI_Raw);
+    } };
 }

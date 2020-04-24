@@ -17,3 +17,8 @@ int lb_log(lua_State* L) {
 		return 0;
 	}CATCH()
 }
+LModule lualog_module() {
+	return LModule{ [](lua_State* L) {
+		lua_register(L,"Log",lb_log);
+	} };
+}

@@ -56,9 +56,11 @@ static const luaL_Reg R[] =
 	{"exists",lb_fs_exists},
 	{ NULL,		NULL	}
 };
-int lb_fs_entry(lua_State* L) {
+static void lb_fs_entry(lua_State* L) {
 	lua_newtable(L);
 	luaL_setfuncs(L, R, 0);
 	lua_setglobal(L, "fs");
-	return 0;
+}
+LModule luafs_module() {
+	return { lb_fs_entry };
 }

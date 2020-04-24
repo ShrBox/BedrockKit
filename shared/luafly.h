@@ -20,10 +20,10 @@ public:
 
 struct LuaFly {
     lua_State* L;
-    LuaFly(lua_State* L_) {
+    inline LuaFly(lua_State* L_) {
         L = L_;
     }
-    bool pCall(const char* name,size_t in,int out,int EHIDX) {
+    inline bool pCall(const char* name,size_t in,int out,int EHIDX) {
         if (lua_pcall(L, (int)in, out, EHIDX) != 0) {
             printf("[LUA] pcall %s error %s\n",name,lua_tostring(L,-1));
             return false;

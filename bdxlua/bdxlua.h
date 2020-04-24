@@ -16,6 +16,11 @@
 #include<unordered_map>
 #include<stl\optional.h>
 #include<stl\static_queue.h>
+
+extern struct lua_State* _L;
+extern bool _LIsInMain;
+extern int _LEHIDX;
+
 using std::variant,std::vector,std::unordered_map;
 typedef variant<long long, string> ldata_t;
 typedef ldata_t(*luacb_t)(vector<ldata_t>& arg);
@@ -41,9 +46,7 @@ struct ldata_ref_t {
 		return d.lv;
 	}
 };
-BDXLUA_API optional<long long> call_lua(const char* name, static_queue<ldata_ref_t,8> const& arg);
-extern BDXLUA_API lua_State* L;
-BDXLUA_API void registerLuaLoadHook(void(*)());
+BDXLUA_API optional<long long> call_lua(const char* name, std::initializer_list<ldata_ref_t> const& arg);
 #ifdef BDXLUA_EXPORTS
 int lua_bind_GUI(lua_State* L);
 #endif
@@ -61,3 +64,102 @@ int lua_bind_GUI(lua_State* L);
 		return 0; \
 	}
 
+template<int rv = 0>
+struct LuaStackBalance {
+	int stk;
+	lua_State* myL;
+	inline LuaStackBalance(lua_State* L) {
+		stk = lua_gettop(L);
+		myL = L;
+	}
+	inline ~LuaStackBalance() {
+		lua_settop(myL, stk + rv);
+	}
+};
+struct LuaCtxSwapper {
+	bool oldismain;
+	lua_State* oldstate;
+	LuaCtxSwapper(lua_State* L) {
+		oldstate = L;
+		oldismain = false;
+		std::swap(_L, oldstate);
+		std::swap(_LIsInMain, oldismain);
+	}
+	~LuaCtxSwapper() {
+		std::swap(_L, oldstate);
+		std::swap(_LIsInMain, oldismain);
+	}
+};
+
+
+
+#include<luafly.h>
+auto inline getEHIDX() {
+	if (!_LIsInMain) {
+		lua_rawgeti(_L, LUA_REGISTRYINDEX, _LEHIDX);
+		return lua_gettop(_L);
+	}
+	else {
+		return 1;
+	}
+}
+template<typename... TP>
+optional<long long> call_luaex(const char* name, TP&&... args) {
+	LuaStackBalance B(_L);
+	int EHIDX(getEHIDX());
+	if (lua_getglobal(_L, name) == 0) {
+		printf("[LUA] function %s not found\n", name);
+		return {};
+	}
+	LuaFly fly{ _L };
+	fly.pushs(std::forward<TP>(args)...);
+	if (!fly.pCall(name, sizeof...(args), 1, EHIDX)) {
+		printf("[Lua] <%s> Error: %s\n", name,lua_tostring(_L, -1));
+		return {};
+	}
+	if (lua_isinteger(_L, -1)) {
+		long long x;
+		fly.pop(x);
+		return { {x} };
+	}
+	else {
+		return {};
+	}
+}
+template<typename... TP>
+void call_luaex_norv(const char* name, TP&&... args) {
+	LuaStackBalance B(_L);
+	int EHIDX(getEHIDX());
+	if (lua_getglobal(_L, name) == 0) {
+		printf("[LUA] function %s not found\n", name);
+		return;
+	}
+	LuaFly fly{ _L };
+	fly.pushs(std::forward<TP>(args)...);
+	if (!fly.pCall(name, sizeof...(args), 0, EHIDX)) {
+		printf("[Lua] <%s> Error: %s\n", name,lua_tostring(_L, -1));
+		return;
+	}
+}
+
+
+struct LModule {
+	void(*onload)(lua_State* L);
+	void(*ondefunct)(lua_State* L);
+	LModule(void(*a)(lua_State* L), void(*b)(lua_State* L) = nullptr) {
+		onload = a;
+		ondefunct = b;
+	}
+	void init(lua_State* L) {
+		onload(L);
+	}
+	void defunct(lua_State* L) {
+		if (ondefunct) ondefunct(L);
+	}
+};
+BDXLUA_API void registerLuaModule(LModule x);
+static inline string_view LReadStr(lua_State* L,int idx) {
+	size_t len;
+	auto pchr = lua_tolstring(L, idx, &len);
+	return { pchr,len };
+}
