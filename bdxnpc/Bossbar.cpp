@@ -105,4 +105,10 @@ void entry_bossbar() {
 			sendBB({ wp },pinmsg);
 		}
 	});
+	addListener([](PlayerChangeDimEvent& ev) {
+		WPlayer wp = ev.getPlayer();
+		if (pinmsg.length()) {
+			sendBB({ wp }, pinmsg);
+		}
+		});
 }
