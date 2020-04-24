@@ -71,7 +71,7 @@ function Listen(ename,cb)
 	if cb==nil then
 		error("cant find cb,did you `Listen` before declaring the function???")
 	end
-	append(_G["EH_"..ename],cb)
+	Listen2(ename,cb)
 end
 
 function get_item_count(name,item)
@@ -85,7 +85,7 @@ function get_item_count(name,item)
         end
         return tonumber(string.match(res,"has (%d+) items"))
 end
-function safe_clear(name,item,count)
+function safe_clear_old(name,item,count)
         -- legacy API,use sClear instead
         -- return bool (success)
         if string.find(item,' ')==nil then
@@ -98,6 +98,17 @@ function safe_clear(name,item,count)
         end
         local suc,res=runCmdEx(string.format("clear \"%s\" %s %d",name,item,count))
         return suc
+end
+function safe_clear(name,item,count)
+	local aux=-1
+	local itemname
+	if string.find(item,' ')~=nil then
+		itemname,aux=item:match("([^%s]+)%s+(%d+)")
+		aux=tonumber(aux)
+	else
+		itemname=item
+	end
+	return invapi.sClear(name,itemname,count,aux)
 end
 function append(tbl,v,i)
 	tbl[TSize(tbl)+(i or 0)]=v
@@ -114,7 +125,6 @@ function runCmdS(cmd,break_on_error)
 	end
 	return true,res
 end
-_TASKS={}
 function schedule(cb,interval,delay)
 	-- cb:str/upvalue interval,delay:int  -> taskid:int
 	if type(cb)=="string" then
@@ -124,14 +134,11 @@ function schedule(cb,interval,delay)
 		error("cant find cb,did you `schedule` before declaring the function???")
 	end
 	if delay==nil then delay=0 end
-	local tid=__gettid()
-	__schedule(tid,interval,delay)
-	_TASKS[tid]=cb
+	schapi.schedule(cb,interval,delay)
 	return tid
 end
 function cancel(taskid)
-	__cancel(taskid)
-	_TASKS[taskid]=nil
+	schapi.cancel(taskid)
 end
 
 _MSGH={}

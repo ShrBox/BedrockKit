@@ -11,9 +11,20 @@ local function sendMenu(name,mn)
         sendText(name,"wrong menu name")
         return
     end
+    if menu[mn]["OP"]~=nil and isOP(name)==false then
+        sendText(name,"op only")
+        return
+    end
     GUIR(name,menu[mn]["S"])
 end
 function GUIFORWARD(name,a,b,extra)
+    local isop=menu[extra]["OP"]
+    if isop~=nil then
+        if isOP(name)==false then
+            sendText(name,"op only")
+            return
+        end
+    end
     menu[extra]["F"](name,a,b,extra) 
 end
 local function TBL2STR(T)
@@ -57,13 +68,18 @@ local function loadAll()
                 type,mname,title,content=line:match("(%a+)%s+([^%s]+)%s+(%b<>)%s+(%b<>)")
                 title=title:sub(2,-2)
                 content=content:sub(2,-2)
-                if type=="menu" then
+                if type:sub(1,4)=="menu" then
+                    local isopMenu= (type=="menuop")
                     local mnamec=mname
                     data["F"]=function(name,idx) 
                         menu[mnamec]["D"][idx](name)
                     end
                     data["D"]={}
+                    if isopMenu then
+                        data["OP"]=1
+                    end
                     serial=string.format("type=simple,title=\"%s\",cb=GUIFORWARD,content=\"%s\",extra=%s\n",title,content,mname)
+                    type="menu"
                 end
                 if type=="shop" then
                     local mnamec=mname
@@ -78,9 +94,6 @@ local function loadAll()
                     data["tp"]="select"
                     local cmd=line:match("%a+%s+[^%s]+%s+%b<>%s+%b<>%s+(%b())")
                     cmd=string.sub(cmd,2,-2)
-                    if cmd:sub(1,1)~='/' then
-                        cmd='/'..cmd
-                    end
                     data["F"]=function (name,raw,dat)
 			-- print(cmd:gsub("%%dst%%",dat[1]):gsub("%%name%%",name))
                         runCmdAs(name,cmd:gsub("%%dst%%",dat[1]):gsub("%%name%%",name))
@@ -110,9 +123,6 @@ local function loadAll()
                         end)
                     end
                     if tp2=="run" or tp2=="runas" then
-                        if arg:sub(1,1)~='/' then
-                            arg='/'..arg
-                        end
                         append(data["D"],function(name)
                             if tp2=="run" then
                                 runCmd(arg:gsub("%%name%%",name))

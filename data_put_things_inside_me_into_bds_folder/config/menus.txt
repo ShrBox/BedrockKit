@@ -4,7 +4,7 @@ menu main <主菜单> <服务器菜单\n123>
 	sub <经济系统> <> (m_eco)
 	sub <领地系统> <> (m_land)
 	sub <管理系统> <> (m_op)
-	chain <test> <> (/money reduce "%name%" 114514) (/say "%name%" is rich!$/money add "%name%" 114514)
+	chain <test> <> (money reduce "%name%" 114514) (say "%name%" is rich!$money add "%name%" 114514)
 	exit <退出> <> ()
 end
 
@@ -20,7 +20,7 @@ end
 select s_mhist <Money History> <玩家> (money hist "%dst%")
 end
 
-menu m_op <管理菜单> <>
+menuop m_op <管理菜单> <>
 	sub <ban> <> (s_ban)
 	sub <kick> <> (s_kick)
 	sub <查背包> <> (s_invchk)

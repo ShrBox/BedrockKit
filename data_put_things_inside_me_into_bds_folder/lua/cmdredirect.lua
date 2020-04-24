@@ -6,22 +6,21 @@ local function loadAll()
     for line in io.lines("config/cmds.txt") do
         -- alias <from> <to>
         -- cond <cmd> <condition>
-        local tp,from,to=line:match('(%a+)%s+(%b<>)%s+(%b<>)')
-        from=from:sub(2,-2)
-        to=to:sub(2,-2)
-        if tp=="alias" then
-            if to:sub(1,1)~='/' and to:sub(1,1)~='!' then
-                to='/'..to
+            if line:sub(1,1)~='#' then
+                local tp,from,to=line:match('(%a+)%s+(%b<>)%s+(%b<>)')
+                from=from:sub(2,-2)
+                to=to:sub(2,-2)
+                if tp=="alias" then
+                    if from:sub(1,1)=='/' then
+                        CMD_CMD[from:sub(2)]=to
+                    else
+                        CHAT_CMD[from]=to
+                    end
+                else
+                    -- cond
+                    CMD_COND[from]=to
+                end
             end
-            if from:sub(1,1)=='/' then
-                CMD_CMD[from]=to
-            else
-                CHAT_CMD[from]=to
-            end
-        else
-            -- cond
-            CMD_COND[from]=to
-        end
     end
 end
 loadAll()
@@ -44,8 +43,6 @@ Listen('onCMD',function(name,cmd)
             sendText(name,"cmd cond failed")
             return -1
         end
-        runCmdAs(name,cmd:sub(2))
-        return -1
        end
     end
     local to=CMD_CMD[cmd]

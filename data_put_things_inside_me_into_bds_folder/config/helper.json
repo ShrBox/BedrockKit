@@ -3,9 +3,7 @@
 "fix_crash_bed_explode":false,
 "FIX_PUSH_CHEST":true,
 "FAKE_SEED":114514,
-"CMDMAP":{
-"0":"l m main"
-},
+"CMDMAP":{},
 "Timers":[],
 "explosion_land_dist":8,
 "NO_EXPLOSION":false,
